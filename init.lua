@@ -1,15 +1,41 @@
 local party = {}
 local mod_storage = minetest.get_mod_storage()
-local player_list = {}
 
--- maintain a full player list
-for _, player in next, minetest.get_dir_list(minetest.get_worldpath().."/players", false) do
-		player_list[#player_list+1] = player
-end
-table.sort(player_list)
-minetest.register_on_newplayer(function(ObjectRef)
-	player_list[#player_list+1] = ObjectRef:get_player_name()
-	table.sort(player_list)
+-- maintain a playerlist inside mod storage
+-- add new players to the mod storage playerlist - thanks to Amaz
+local player_list_l = mod_storage:get_string("playerlist")
+minetest.register_on_newplayer(function(newplayer)
+	if player_list_l == (nil or "") then
+		player_list_t = {}
+	else player_list_t = minetest.deserialize(player_list_l)
+	end
+	player_list_t[#player_list_t+1] = newplayer:get_player_name()
+	local player_list_s = minetest.serialize(player_list_t)
+	mod_storage:set_string("playerlist", player_list_s)
+end)
+
+-- check if old players are in the playerlist, if not, add them to the list
+minetest.register_on_joinplayer(function(player)
+	local name = player:get_player_name()
+	if player_list_l == (nil or "") then
+		return
+	end
+	
+	local player_list_lt = minetest.deserialize(mod_storage:get_string("playerlist"))
+	for _,playernames in ipairs(player_list_lt) do
+		if name == playernames then
+			return
+		end
+	end
+
+	print("existing player but new to list")
+	if player_list_l == (nil or "") then
+		player_list_e = {}
+	else player_list_e = minetest.deserialize(player_list_l)
+	end
+	player_list_e[#player_list_e+1] = player:get_player_name()
+	local player_list_s = minetest.serialize(player_list_e)
+	mod_storage:set_string("playerlist", player_list_s)
 end)
 
 -- group notice
@@ -81,6 +107,7 @@ end
 -- check if party name exists
 -- if it exists, return true
 party.check_tag = function(name, tag)
+	local player_list = minetest.deserialize(mod_storage:get_string("playerlist"))
 	for _,playernames in ipairs(player_list) do
 		if tag == mod_storage:get_string(playernames.."_leader") then
 			return true
@@ -96,6 +123,15 @@ party.join = function(name, partyname)
 	player:set_attribute("partypending", nil)
 	player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
 	party.send_notice_all(name, name.." has joined "..partyname.."'s party ["..cparty_l.."].")
+end
+
+party.leave = function(name)
+	local player = minetest.get_player_by_name(name)
+	mod_storage:set_string(name.."_party", nil)
+	mod_storage:set_string(name.."_officer", nil)
+	mod_storage:set_string(name.."_leader", nil)
+	mod_storage:set_string(name.."_lock", nil)
+	player:set_nametag_attributes({text = name})
 end
 
 
@@ -116,9 +152,11 @@ minetest.register_chatcommand("party", {
 		local player = minetest.get_player_by_name(name)
 		local cparty = mod_storage:get_string(name.."_party")
 		local cparty_o = mod_storage:get_string(name.."_officer")
+		local player_list = minetest.deserialize(mod_storage:get_string("playerlist"))
 		
 		if param1 == "help" then
-			party.send_notice(name, "/all --- Send message to main chat")
+			party.send_notice(name, "/all --- Send message to main chat (if you are in a party)")
+			party.send_notice(name, "Add '@' in front of your chat to send to main chat (if you are in a party).")
 			party.send_notice(name, "/party --- List your current party")
 			party.send_notice(name, "/party list --- List online members of your party")
 			party.send_notice(name, "/party list all --- List all members of your party")
@@ -146,7 +184,6 @@ minetest.register_chatcommand("party", {
 			-- TODO
 			-- party.send_notice(name, "/party colour <colour> --- Change party colour in nametags/chat")
 			-- formspecs equivalents
-			-- Replace /all with a simpler method
 			
 		elseif param1 == nil then
 			if party.check(name, 1) == true then
@@ -228,10 +265,7 @@ minetest.register_chatcommand("party", {
 			local cparty_l = mod_storage:get_string(cparty.."_leader")
 			if mod_storage:get_string(name.."_leader") == (nil or "") then
 				party.send_notice_all(name, name.." left "..cparty.."'s party ["..cparty_l.."].")
-				-- clear storage and effects
-				mod_storage:set_string(name.."_party", nil)
-				mod_storage:set_string(name.."_officer", nil)
-				player:set_nametag_attributes({text = name})
+				party.leave(name)
 			else party.send_notice(name, "You cannot leave your own party! Use /party disband instead.")
 			end
 		
@@ -338,9 +372,7 @@ minetest.register_chatcommand("party", {
 				for _,players in ipairs(minetest.get_connected_players()) do
 					local names = players:get_player_name()
 					if mod_storage:get_string(names.."_party") == cparty then
-						players:set_nametag_attributes({text = names})
-						mod_storage:set_string(names.."_party", nil)
-						mod_storage:set_string(names.."_officer", nil)
+						party.leave(names)
 					end
 				end
 				-- mark offline players so they would be notified when they login
@@ -348,6 +380,10 @@ minetest.register_chatcommand("party", {
 					if minetest.get_player_by_name(playernames) == nil then
 						if mod_storage:get_string(playernames.."_party") == cparty then
 							mod_storage:set_string(playernames.."_party", "@")
+							-- open up the alliance name for taking
+							mod_storage:set_string(playernames.."_officer", nil)
+							mod_storage:set_string(playernames.."_leader", nil)
+							mod_storage:set_string(playernames.."_lock", nil)
 						end
 					end
 				end
@@ -380,18 +416,18 @@ minetest.register_chatcommand("party", {
 				for _,players in ipairs(minetest.get_connected_players()) do
 					local names = players:get_player_name()
 					if mod_storage:get_string(names.."_party") == cparty then
-						players:set_nametag_attributes({text = names})
-						mod_storage:set_string(names.."_party", nil)
-						mod_storage:set_string(names.."_officer", nil)
-						mod_storage:set_string(names.."_leader", nil)
-						mod_storage:set_string(names.."_lock", nil)
+						party.leave(names)
 					end
 				end
 				-- mark offline players so they would be notified when they login
 				for _,playernames in ipairs(player_list) do
 					if minetest.get_player_by_name(playernames) == nil then
 						if mod_storage:get_string(playernames.."_party") == cparty then
-							mod_storage:set_string(playernames.."_party", "@")
+							mod_storage:set_string(playernames.."_party", "=")
+							-- open up the alliance name for taking
+							mod_storage:set_string(playernames.."_officer", nil)
+							mod_storage:set_string(playernames.."_leader", nil)
+							mod_storage:set_string(playernames.."_lock", nil)
 						end
 					end
 				end
@@ -503,11 +539,9 @@ minetest.register_chatcommand("party", {
 				
 				-- kicking offline player, give a mark to notify player when he logins
 				if minetest.get_player_by_name(param2) == nil then
-					if mod_storage:get_string(param2) == name then
-						party.send_notice_all(name, param2.."[offline] was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."].")
-						mod_storage:set_string(param2.."_party", "#")
-					end
-					return
+					party.send_notice_all(name, param2.."[offline] was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."].")
+					mod_storage:set_string(param2.."_party", "#")
+					mod_storage:set_string(param2.."_officer", nil)
 				end
 				
 				-- kicking online player
@@ -633,7 +667,7 @@ minetest.register_chatcommand("party", {
 })
 
 minetest.register_chatcommand("all", {
-	description = "Chat on main chat",
+	description = "Chat on main chat if in party.",
 	privs = {shout=true},
 	func = function(name, param)
 		local player = minetest.get_player_by_name(name)
@@ -645,8 +679,12 @@ minetest.register_chatcommand("all", {
 			for _,players in ipairs(minetest.get_connected_players()) do
 				local names = players:get_player_name()
 				minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..param)
-				minetest.log("action", "CHAT : "..param)
 			end
+		end
+		
+		-- chat logging
+		if cparty ~= (nil or "") then
+			minetest.log("action", "CHAT : "..param)
 		end
 	end,
 })
@@ -663,19 +701,38 @@ minetest.register_on_chat_message(function(name, message)
 	
 	for _,players in ipairs(minetest.get_connected_players()) do
 		local names = players:get_player_name()
-		if cparty ~= (nil or "") and cparty == mod_storage:get_string(names.."_party") then
+		
+		if string.match(message, "^@(.+)") then
+			local cparty_l = mod_storage:get_string(cparty.."_leader")
+			
+			minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..string.gsub(message, "^@", ""))
+		end
+		
+		if cparty ~= (nil or "") and cparty == mod_storage:get_string(names.."_party") and not string.match(message, "^@(.+)") then
 			minetest.chat_send_player(names, minetest.colorize("green", "[Party] ").."<"..name.."> " ..message)
 			party.chat_spy(names, message)
-			minetest.log("action", "CHAT [PARTY] : "..message)
 		end
 	end
+
+	-- main chat
 	for _,players in ipairs(minetest.get_connected_players()) do
 		local names = players:get_player_name()
 		if cparty == (nil or "") then
 			minetest.chat_send_player(names, "<"..name.."> " ..message)
-			minetest.log("action", "CHAT : "..message)
+			
 		end
 	end
+	
+	-- chat logging
+	if cparty == (nil or "") then
+		minetest.log("action", "CHAT : "..message)
+	elseif cparty ~= (nil or "") then
+		if string.match(message, "^@(.+)") then
+			minetest.log("action", "CHAT : "..string.gsub(message, "^@", ""))
+		else minetest.log("action", "CHAT [PARTY] : "..message)
+		end
+	end
+	
 	return true
 end)
 
@@ -702,17 +759,15 @@ minetest.register_on_joinplayer(function(player)
 	-- clear all stats (just in case) if player get kick / party is disbanded / data is corrupted
 	if cparty == "@" then
 		party.send_notice(name, "While you were away, your party has disbanded!")
-		mod_storage:set_string(name.."_party", nil)
-		mod_storage:set_string(name.."_officer", nil)
-		mod_storage:set_string(name.."_leader", nil)
-		mod_storage:set_string(name.."_lock", nil)
+		party.leave(name)
 	elseif cparty == "#" then
 		local cparty_l = mod_storage:get_string(cparty.."_leader")
 		party.send_notice(name, "While you were away, you were kicked from your party!")
-		mod_storage:set_string(name.."_party", nil)
-		mod_storage:set_string(name.."_officer", nil)
-		mod_storage:set_string(name.."_leader", nil)
-		mod_storage:set_string(name.."_lock", nil)
+		party.leave(name)
+	elseif cparty == "=" then
+		local cparty_l = mod_storage:get_string(cparty.."_leader")
+		party.send_notice(name, "While you were away, your party was disbanded by an admin!")
+		party.leave(name)
 	elseif cparty ~= (nil or "") then
 		local cparty_l = mod_storage:get_string(cparty.."_leader")
 		if cparty_l == (nil or "") then
@@ -720,15 +775,13 @@ minetest.register_on_joinplayer(function(player)
 			party.send_notice(name, "ERROR: While you are away, you were either kicked or the party disbanded and was recreated.")
 			party.send_notice(name, "ERROR: Otherwise something became corrupted :/")
 			party.send_notice(name, "ERROR: Your party info has been reset.")
-			mod_storage:set_string(name.."_party", nil)
-			mod_storage:set_string(name.."_officer", nil)
-			mod_storage:set_string(name.."_leader", nil)
-			mod_storage:set_string(name.."_lock", nil)
+			party.leave(name)
 			return
 		else
 			player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
 		end
 	end
+	print(player_list)
 end)
 
 
