@@ -1,7 +1,10 @@
 local party = {}
 local mod_storage = minetest.get_mod_storage()
 
--- maintain a playerlist inside mod storage
+
+-- =======================
+-- ===== PLAYER LIST =====
+-- =======================
 -- add new players to the mod storage playerlist - thanks to Amaz
 minetest.register_on_newplayer(function(newplayer)
 	local player_list_l = mod_storage:get_string("playerlist")
@@ -39,6 +42,9 @@ minetest.register_on_joinplayer(function(player)
 	mod_storage:set_string("playerlist", player_list_s)
 end)
 
+-- =======================
+-- ======= HELPERS =======
+-- =======================
 -- group notice
 party.send_notice_all = function(name, message)
 	for _,players in ipairs(minetest.get_connected_players()) do
@@ -185,7 +191,10 @@ minetest.register_chatcommand("party", {
 			-- TODO
 			-- party.send_notice(name, "/party colour <colour> --- Change party colour in nametags/chat")
 			-- formspecs equivalents
-			
+	
+		-- =======================
+		-- === GENERAL COMMANDS ==
+		-- =======================
 		elseif param1 == nil then
 			if party.check(name, 1) == true then
 				return
@@ -362,6 +371,10 @@ minetest.register_chatcommand("party", {
 			else party.send_notice(name, "You are already in a party! Invites wouldn't be received when you are in a party!")
 			end
 			
+
+		-- =======================
+		-- = LEADERSHIP COMMANDS =
+		-- =======================
 		-- /party disband
 		elseif param1 == "disband" then			
 			if party.check(name, 3) == true then
@@ -394,46 +407,6 @@ minetest.register_chatcommand("party", {
 				mod_storage:set_string(name.."_leader", nil)
 				mod_storage:set_string(name.."_lock", nil)
 				player:set_nametag_attributes({text = name})
-			end
-		
-		elseif param1 == "forcedisband" and param2 ~= nil then
-			if not minetest.check_player_privs(name, {ban=true}) then
-				party.send_notice(name, "You are not an admin!")
-				return
-			end
-			
-			if party.check_tag(name, param2) == true then
-				local leadername = ""
-				for _,playernames in ipairs(player_list) do
-					if param2 == mod_storage:get_string(playernames.."_leader") then
-						leadername = leadername .. playernames
-					end
-				end
-				local cparty = leadername
-				
-				party.send_notice(name, "You have disbanded "..leadername.."'s party ["..param2.."]")
-				party.send_notice_all(leadername, leadername.."'s party ["..mod_storage:get_string(leadername.."_leader").."] has been disbanded by "..name..", an admin")
-				-- remove online players
-				for _,players in ipairs(minetest.get_connected_players()) do
-					local names = players:get_player_name()
-					if mod_storage:get_string(names.."_party") == cparty then
-						party.leave(names)
-					end
-				end
-				-- mark offline players so they would be notified when they login
-				for _,playernames in ipairs(player_list) do
-					if minetest.get_player_by_name(playernames) == nil then
-						if mod_storage:get_string(playernames.."_party") == cparty then
-							mod_storage:set_string(playernames.."_party", "=")
-							-- open up the alliance name for taking
-							mod_storage:set_string(playernames.."_officer", nil)
-							mod_storage:set_string(playernames.."_leader", nil)
-							mod_storage:set_string(playernames.."_lock", nil)
-						end
-					end
-				end
-				
-			else party.send_notice(name, "Party does not exist!")
 			end
 		
 		elseif param1 == "rename" and param2 ~= nil then
@@ -659,7 +632,50 @@ minetest.register_chatcommand("party", {
 				end
 			else party.send_notice(name, "You are not in a party!")
 			end
+			
 		
+		-- =======================
+		-- ==== ADMIN COMMANDS ===
+		-- =======================
+		elseif param1 == "forcedisband" and param2 ~= nil then
+			if not minetest.check_player_privs(name, {ban=true}) then
+				party.send_notice(name, "You are not an admin!")
+				return
+			end
+			
+			if party.check_tag(name, param2) == true then
+				local leadername = ""
+				for _,playernames in ipairs(player_list) do
+					if param2 == mod_storage:get_string(playernames.."_leader") then
+						leadername = leadername .. playernames
+					end
+				end
+				local cparty = leadername
+				
+				party.send_notice(name, "You have disbanded "..leadername.."'s party ["..param2.."]")
+				party.send_notice_all(leadername, leadername.."'s party ["..mod_storage:get_string(leadername.."_leader").."] has been disbanded by "..name..", an admin")
+				-- remove online players
+				for _,players in ipairs(minetest.get_connected_players()) do
+					local names = players:get_player_name()
+					if mod_storage:get_string(names.."_party") == cparty then
+						party.leave(names)
+					end
+				end
+				-- mark offline players so they would be notified when they login
+				for _,playernames in ipairs(player_list) do
+					if minetest.get_player_by_name(playernames) == nil then
+						if mod_storage:get_string(playernames.."_party") == cparty then
+							mod_storage:set_string(playernames.."_party", "=")
+							-- open up the alliance name for taking
+							mod_storage:set_string(playernames.."_officer", nil)
+							mod_storage:set_string(playernames.."_leader", nil)
+							mod_storage:set_string(playernames.."_lock", nil)
+						end
+					end
+				end
+				
+			else party.send_notice(name, "Party does not exist!")
+			end
 		
 		else party.send_notice(name, "ERROR: Command is invalid! For help, use the command '/party help'")
 		end
