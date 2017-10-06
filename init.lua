@@ -3,8 +3,8 @@ local mod_storage = minetest.get_mod_storage()
 
 -- maintain a playerlist inside mod storage
 -- add new players to the mod storage playerlist - thanks to Amaz
-local player_list_l = mod_storage:get_string("playerlist")
 minetest.register_on_newplayer(function(newplayer)
+	local player_list_l = mod_storage:get_string("playerlist")
 	if player_list_l == (nil or "") then
 		player_list_t = {}
 	else player_list_t = minetest.deserialize(player_list_l)
@@ -16,23 +16,24 @@ end)
 
 -- check if old players are in the playerlist, if not, add them to the list
 minetest.register_on_joinplayer(function(player)
+	local player_list_l = mod_storage:get_string("playerlist")
 	local name = player:get_player_name()
 	if player_list_l == (nil or "") then
-		return
+		player_list_lt = {}
+	else player_list_lt = minetest.deserialize(player_list_l)
 	end
-	
-	local player_list_lt = minetest.deserialize(mod_storage:get_string("playerlist"))
+
 	for _,playernames in ipairs(player_list_lt) do
 		if name == playernames then
 			return
 		end
 	end
 
-	print("existing player but new to list")
 	if player_list_l == (nil or "") then
-		player_list_e = {}
+		local player_list_e = {}
 	else player_list_e = minetest.deserialize(player_list_l)
 	end
+
 	player_list_e[#player_list_e+1] = player:get_player_name()
 	local player_list_s = minetest.serialize(player_list_e)
 	mod_storage:set_string("playerlist", player_list_s)
@@ -392,7 +393,7 @@ minetest.register_chatcommand("party", {
 				mod_storage:set_string(name.."_party", nil)
 				mod_storage:set_string(name.."_leader", nil)
 				mod_storage:set_string(name.."_lock", nil)
-				player:set_nametag_attributes({text = names})
+				player:set_nametag_attributes({text = name})
 			end
 		
 		elseif param1 == "forcedisband" and param2 ~= nil then
@@ -684,7 +685,7 @@ minetest.register_chatcommand("all", {
 		
 		-- chat logging
 		if cparty ~= (nil or "") then
-			minetest.log("action", "CHAT : "..param)
+			minetest.log("action", "CHAT : <"..name.."> : "..param)
 		end
 	end,
 })
@@ -725,11 +726,11 @@ minetest.register_on_chat_message(function(name, message)
 	
 	-- chat logging
 	if cparty == (nil or "") then
-		minetest.log("action", "CHAT : "..message)
+		minetest.log("action", "CHAT : <"..name.."> : "..message)
 	elseif cparty ~= (nil or "") then
 		if string.match(message, "^@(.+)") then
-			minetest.log("action", "CHAT : "..string.gsub(message, "^@", ""))
-		else minetest.log("action", "CHAT [PARTY] : "..message)
+			minetest.log("action", "CHAT : <"..name.."> : "..string.gsub(message, "^@", ""))
+		else minetest.log("action", "CHAT [PARTY] : <"..name.."> : "..message)
 		end
 	end
 	
@@ -781,7 +782,6 @@ minetest.register_on_joinplayer(function(player)
 			player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
 		end
 	end
-	print(player_list)
 end)
 
 
