@@ -61,7 +61,7 @@ party.send_notice = function(name, message)
 end
 
 -- chat spy for admins
-minetest.register_privilege("partyspy", "")
+minetest.register_privilege("p-spy", "")
 party.chat_spy = function(name, message)
 	for _,players in ipairs(minetest.get_connected_players()) do
 		local names = players:get_player_name()
@@ -142,8 +142,8 @@ party.leave = function(name)
 end
 
 
-minetest.register_chatcommand("party", {
-	description = "Create and join a party",
+minetest.register_chatcommand("p", {
+	description = "Create and join a party. For help, use /p help",
 	privs = {shout=true},
 	func = function(name, param)
 	
@@ -164,34 +164,48 @@ minetest.register_chatcommand("party", {
 		if param1 == "help" then
 			party.send_notice(name, "/all --- Send message to main chat (if you are in a party)")
 			party.send_notice(name, "Add '@' in front of your chat to send to main chat (if you are in a party).")
-			party.send_notice(name, "/party --- List your current party")
-			party.send_notice(name, "/party list --- List online members of your party")
-			party.send_notice(name, "/party list all --- List all members of your party")
-			party.send_notice(name, "/party list <playername> --- List party of player")
-			party.send_notice(name, "/party leave --- Leave your party")
-			party.send_notice(name, "/party create <partyname> --- Create a party")
-			party.send_notice(name, "/party join <partyname> --- Join a party")
-			party.send_notice(name, "/party invite <yes/no> --- Accept/ reject a party invite")
-			party.send_notice(name, "/party noinvite --- Reject all parties invites automatically")
+			party.send_notice(name, "/p --- List your current party")
+			party.send_notice(name, "/p list --- List online members of your party")
+			party.send_notice(name, "/p list all --- List all members of your party")
+			party.send_notice(name, "/p list <playername> --- List party of player")
+			party.send_notice(name, "/p leave --- Leave your party")
+			party.send_notice(name, "/p create <partyname> --- Create a party")
+			party.send_notice(name, "/p join <partyname> --- Join a party")
+			party.send_notice(name, "/p invite <yes/no> --- Accept/ reject a party invite")
+			party.send_notice(name, "/p noinvite --- Toggle noinvites, if on, reject all parties invites automatically")
 			
 			party.send_notice(name, " OFFICERS/ LEADER COMMANDS:")
-			party.send_notice(name, "/party kick <playername> --- Kick a player out of your party")
-			party.send_notice(name, "/party invite <playername> --- Invite a player to join your party")
-			party.send_notice(name, "/party <accept/reject> <playername> --- Accept/ reject a join request (if joining method is set to [Request Mode])")
+			party.send_notice(name, "/p kick <playername> --- Kick a player out of your party")
+			party.send_notice(name, "/p invite <playername> --- Invite a player to join your party")
+			party.send_notice(name, "/p <accept/reject> <playername> --- Accept/ reject a join request (if joining method is set to [Request Mode])")
 
 			party.send_notice(name, " LEADER-ONLY COMMANDS:")
-			party.send_notice(name, "/party disband --- Disband your party")
-			party.send_notice(name, "/party rename <new_partyname> --- Rename your party")
-			party.send_notice(name, "/party officer <playername> --- Promote a player to officer. Officers can kick & invite.")
-			party.send_notice(name, "/party lock <open/active/request/private> --- Change joining method for your party")
+			party.send_notice(name, "/p disband --- Disband your party")
+			party.send_notice(name, "/p rename <new_partyname> --- Rename your party")
+			party.send_notice(name, "/p officer <playername> --- Toogle a player's officer position. Officers can kick & invite.")
+			party.send_notice(name, "/p lock <open/active/request/private> --- Toggle joining method for your party")
 			
 			party.send_notice(name, " ADMIN COMMANDS:")
-			party.send_notice(name, "/party forcedisband <partyname> --- Forcefully disband a party (requires 'ban' privilege)")
+			party.send_notice(name, "/p forcedisband <partyname> --- Forcefully disband a party (requires 'ban' privilege)")
 			
 			-- TODO
-			-- party.send_notice(name, "/party colour <colour> --- Change party colour in nametags/chat")
 			-- formspecs equivalents
-	
+			-- party.send_notice(name, "/p colour <partycolour> --- Change colour of party tag")
+			-- party.send_notice(name, "/p chat <party/ally/global> --- Toggle between party chat, ally chat, global chat")
+			-- party.send_notice(name, "/p home --- Teleports to party home (set by leader)")
+			-- party.send_notice(name, "/p home set --- Set a party home")
+			-- party.send_notice(name, "/p pvp --- Toggle friendly fire, if two players have pvp enabled even though they are in the same party, they can fight.")
+			
+			-- party.send_notice(name, "/p partylist --- Gives a full list of parties, (requires 'kick' privilege)")
+			-- party.send_notice(name, "/p forcekick <playername> --- Forcefully kick a player from a party (requires 'kick' privilege)")
+			-- party.send_notice(name, "/p forcejoin <playername> --- Forcefully let yourself in a party regardless of its lock mode (requires 'kick' privilege)")
+			
+			-- party.send_notice(name, "/p ally/enemy/neutral <partyname> --- Toggle diplomacy status with another party. Allied parties will have no friendly fire and there will be ally chat.")
+			-- party.send_notice(name, "/p ally list --- Ally list.")
+			-- party.send_notice(name, "/p enemy list --- Enemies list.")
+			-- party.send_notice(name, "/p title <playername> <title> --- Adds a title to a player in party chat.")
+			-- party.send_notice(name, "/p motd --- Adds a motd. Player receive this message when they join the game / party. ")
+			
 		-- =======================
 		-- === GENERAL COMMANDS ==
 		-- =======================
@@ -276,7 +290,7 @@ minetest.register_chatcommand("party", {
 			if mod_storage:get_string(name.."_leader") == "" then
 				party.send_notice_all(name, name.." left "..cparty.."'s party ["..cparty_l.."].")
 				party.leave(name)
-			else party.send_notice(name, "You cannot leave your own party! Use /party disband instead.")
+			else party.send_notice(name, "You cannot leave your own party! Use /p disband instead.")
 			end
 		
 		elseif param1 == "create" and param2 ~= nil then
@@ -304,7 +318,7 @@ minetest.register_chatcommand("party", {
 				party.send_notice(name, "You are already in "..cparty.."'s party ["..cparty_l.."].")
 			end
 		
-		-- /party join
+		-- /p join
 		elseif param1 == "join" and param2 ~= nil then
 			if cparty ~= "" then
 				local cparty_l = mod_storage:get_string(cparty.."_leader")
@@ -339,7 +353,7 @@ minetest.register_chatcommand("party", {
 						if cparty == mod_storage:get_string(names.."_party") then
 							if mod_storage:get_string(names.."_officer") ~= "" or mod_storage:get_string(names.."_leader") ~= "" then
 								local off_names = players:get_player_name()
-								party.send_notice(off_names, name.." has requested to join the party. Use '/party accept <playername>' to accept, '/party reject <playername>' to reject.")
+								party.send_notice(off_names, name.." has requested to join the party. Use '/p accept <playername>' to accept, '/p reject <playername>' to reject.")
 							end
 						end
 					end
@@ -357,7 +371,7 @@ minetest.register_chatcommand("party", {
 			else party.send_notice(name, "Party does not exist!")
 			end
 			
-		-- /party noinvite
+		-- /p noinvite
 		elseif param1 == "noinvite" then
 			if cparty == "" then
 				if player:get_attribute("partynoinvite") == "true" then
@@ -375,7 +389,7 @@ minetest.register_chatcommand("party", {
 		-- =======================
 		-- = LEADERSHIP COMMANDS =
 		-- =======================
-		-- /party disband
+		-- /p disband
 		elseif param1 == "disband" then			
 			if party.check(name, 3) == true then
 				return
@@ -453,7 +467,7 @@ minetest.register_chatcommand("party", {
 				party.send_notice_all(name, "[Public mode] Public joining is enabled for "..name.."'s party ["..cparty_l.."].")
 			end
 		
-		-- /party officer
+		-- /p officer
 		elseif param1 == "officer" and param2 ~= nil then
 			if party.check(name, 3) == true then
 				return
@@ -483,7 +497,7 @@ minetest.register_chatcommand("party", {
 			else party.send_notice(name, "Player "..param2.." does not exist! Case sensitive.")
 			end
 			
-		-- /party kick
+		-- /p kick
 		elseif param1 == "kick"	and param2 ~= nil then
 			if party.check(name, 2) == true then
 				return
@@ -595,7 +609,7 @@ minetest.register_chatcommand("party", {
 					
 					local cparty_l = mod_storage:get_string(cparty.."_leader")
 					t_player:set_attribute("partyinvite", name)
-					party.send_notice(param2, name.." has invited you to "..cparty.."'s party ["..cparty_l.."]! '/party invite yes' to accept or '/party invite no' to decline.")
+					party.send_notice(param2, name.." has invited you to "..cparty.."'s party ["..cparty_l.."]! '/p invite yes' to accept or '/p invite no' to decline.")
 					party.send_notice(name, "You have invited "..param2.." to your party. Awaiting for their response.")
 				
 				-- player does not exist
@@ -677,7 +691,7 @@ minetest.register_chatcommand("party", {
 			else party.send_notice(name, "Party does not exist!")
 			end
 		
-		else party.send_notice(name, "ERROR: Command is invalid! For help, use the command '/party help'")
+		else party.send_notice(name, "ERROR: Command is invalid! For help, use the command '/p help'")
 		end
 		
 	end,
