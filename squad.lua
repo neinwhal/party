@@ -310,9 +310,9 @@ minetest.register_chatcommand("sq", {
 			
 		elseif param1 == "help" then
 			squad.send_notice(name, "NOTE: Unlike parties, squads do not last permanently, you automatically leave if you leave the game and if the squad leader does so, the squad is automatically disbanded.")
-			squad.send_notice(name, "/sq join <squadname>").. " --- Join a squad.")
-			squad.send_notice(name, "/sq leave").. " --- Leave your squad.")
-			squad.send_notice(name, "/sq invite <yes/no>").. " --- Accept / reject an invite.")
+			squad.send_notice(name, minetest.colorize("cyan", "/sq join <squadname>").. " --- Join a squad.")
+			squad.send_notice(name, minetest.colorize("cyan", "/sq leave").. " --- Leave your squad.")
+			squad.send_notice(name, minetest.colorize("cyan", "/sq invite <yes/no>").. " --- Accept / reject an invite.")
 			
 			squad.send_notice(name, " ===== PARTY OFFICERS/ PARTY LEADER COMMANDS: ===== ")
 			squad.send_notice(name, minetest.colorize("cyan", "/sq create <squadname>").. " --- Create a squad.")

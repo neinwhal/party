@@ -164,6 +164,7 @@ minetest.register_chatcommand("p", {
 
 		local param1 = paramlist[1]
 		local param2 = paramlist[2]
+		local param3 = paramlist[3]
 		local player = minetest.get_player_by_name(name)
 		local cparty = mod_storage:get_string(name.."_party")
 		local cparty_o = mod_storage:get_string(name.."_officer")
@@ -176,11 +177,12 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p list").." --- List online members of your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list all").." --- List all members of your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list <playername>").." --- List party of player.")
-			party.send_notice(name, minetest.colorize("cyan", "/p leave").." --- Leave your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p create <partyname>").." --- Create a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p join <partyname>").." --- Join a party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p leave").." --- Leave your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p invite <yes/no>").." --- Accept/ reject a party invite.")
 			party.send_notice(name, minetest.colorize("cyan", "/p noinvite").." --- Toggle noinvites, if on, reject all parties invites automatically.")
+			party.send_notice(name, minetest.colorize("cyan", "/p pvp").." --- Toggle friendly fire, if two players have friendly fire enabled even though they are in the same party, they can fight.")
 			
 			party.send_notice(name, " ===== PARTY OFFICERS/ PARTY LEADER COMMANDS: ===== ")
 			party.send_notice(name, minetest.colorize("cyan", "/p kick <playername>").." --- Kick a player out of your party")
@@ -192,6 +194,7 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p rename <new_partyname>").." --- Rename your party")
 			party.send_notice(name, minetest.colorize("cyan", "/p officer <playername>").." --- Toogle a player's officer position. Officers can kick & invite.")
 			party.send_notice(name, minetest.colorize("cyan", "/p lock <open/active/request/private>").." --- Toggle joining method for your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p title <playername> <title>").." --- Adds a title to a player in party chat.")
 			
 			party.send_notice(name, " ===== ADMIN COMMANDS: ===== ")
 			party.send_notice(name, minetest.colorize("cyan", "/p forcedisband <partyname>").." --- Forcefully disband a party (requires 'ban' privilege)")
@@ -202,7 +205,6 @@ minetest.register_chatcommand("p", {
 			-- party.send_notice(name, "/p chat <party/ally/global> --- Toggle between party chat, ally chat, global chat")
 			-- party.send_notice(name, "/p home --- Teleports to party home (set by leader)")
 			-- party.send_notice(name, "/p home set --- Set a party home")
-			-- party.send_notice(name, "/p pvp --- Toggle friendly fire, if two players have pvp enabled even though they are in the same party, they can fight.")
 			
 			-- party.send_notice(name, "/p partylist --- Gives a full list of parties, (requires 'kick' privilege)")
 			-- party.send_notice(name, "/p forcekick <playername> --- Forcefully kick a player from a party (requires 'kick' privilege)")
@@ -211,7 +213,6 @@ minetest.register_chatcommand("p", {
 			-- party.send_notice(name, "/p ally/enemy/neutral <partyname> --- Toggle diplomacy status with another party. Allied parties will have no friendly fire and there will be ally chat.")
 			-- party.send_notice(name, "/p ally list --- Ally list.")
 			-- party.send_notice(name, "/p enemy list --- Enemies list.")
-			-- party.send_notice(name, "/p title <playername> <title> --- Adds a title to a player in party chat.")
 			-- party.send_notice(name, "/p motd --- Adds a motd. Player receive this message when they join the game / party. ")
 			
 		-- =======================
@@ -393,6 +394,15 @@ minetest.register_chatcommand("p", {
 			else party.send_notice(name, "You are already in a party! Invites wouldn't be received when you are in a party!")
 			end
 			
+		-- /p pvp
+		elseif param1 == "pvp" then
+			if player:get_attribute("partypvp") == "true" then
+				player:set_attribute("partypvp", nil)
+				party.send_notice(name, "NO friendly fire is ENABLED.")
+			elseif player:get_attribute("partypvp") == nil then
+				player:set_attribute("partypvp", "true")
+				party.send_notice(name, "Friendly fire is ENABLED.")
+			end
 
 		-- =======================
 		-- = LEADERSHIP COMMANDS =
@@ -503,6 +513,27 @@ minetest.register_chatcommand("p", {
 				end
 				
 			else party.send_notice(name, "Player "..param2.." does not exist! Case sensitive.")
+			end
+			
+		elseif param1 == "title" and param2 ~= nil and param3 ~= nil then
+			if party.check(name, 3) == true then
+				return
+			end
+			
+			
+			if minetest.player_exists(param2) then
+				if cparty ~= mod_storage:get_string(param2.."_party") then
+					party.send_notice(name, "Player "..param2.." is not in your party!")
+					return
+				end
+			
+				if (param3 == "remove" or param3 == "nil") then
+					mod_storage:set_string(param2.."_title",nil)
+					party.send_notice(name, "Player "..param2.."'s title has been removed")
+				else
+					mod_storage:set_string(param2.."_title",param3)
+					party.send_notice(name, "Player "..param2.."'s title has been set to "..param3)
+				end
 			end
 			
 		-- /p kick
@@ -732,6 +763,7 @@ minetest.register_chatcommand("all", {
 minetest.register_on_chat_message(function(name, message)
 	local player = minetest.get_player_by_name(name)
 	local cparty = mod_storage:get_string(name.."_party")
+	local cparty_title = mod_storage:get_string(name.."_title")
 	
 	-- check if player has shout privs
 	if not minetest.check_player_privs(name, {shout=true}) then
@@ -748,8 +780,13 @@ minetest.register_on_chat_message(function(name, message)
 		end
 		
 		if cparty ~= "" and cparty == mod_storage:get_string(names.."_party") and not string.match(message, "^@(.+)") then
-			minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party] ").."<"..name.."> " ..message)
-			party.chat_spy(names, message)
+			if cparty_title ~= "" then
+				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
+				party.chat_spy(names, message)
+			elseif cparty_title == "" then
+				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..name.."> " ..message)
+				party.chat_spy(names, message)
+			end
 		end
 	end
 
@@ -781,9 +818,13 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 		local hittername = hitter:get_player_name()
 		local p_party = mod_storage:get_string(playername.."_party")
 		local h_party = mod_storage:get_string(hittername.."_party")
+		local p_pvp = player:get_attribute("partypvp")
+		local h_pvp = hitter:get_attribute("partypvp")
 		if p_party ~= "" and p_party == h_party then
-			party.send_notice(hitter:get_player_name(), player:get_player_name().." is in your party!")
-			return true
+			if (p_pvp == nil or h_pvp == nil) then
+				party.send_notice(hitter:get_player_name(), player:get_player_name().." is in your party and has no friendly fire enabled!")
+				return true
+			end
 		end
 	end
 end)
