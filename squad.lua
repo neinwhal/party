@@ -1,4 +1,4 @@
-local squad = {}
+squad = {}
 ids_bg = {}
 ids_hp = {}
 ids_hptag = {}
@@ -202,6 +202,10 @@ squad.leave = function(name, tag)
 	local player = minetest.get_player_by_name(name)
 	local csquad = mod_storage:get_string(name.."_squad")
 	local csquad_no = tonumber(mod_storage:get_string(name.."_squad_no"))
+	
+	if csquad == "" then
+		return
+	end
 	
 	-- remove all huds for player-that-left
 	for i = 1,7 do

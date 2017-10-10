@@ -61,11 +61,11 @@ party.send_notice = function(name, message)
 end
 
 -- chat spy for admins
-minetest.register_privilege("p-spy", "")
+minetest.register_privilege("pspy", "")
 party.chat_spy = function(name, message)
 	for _,players in ipairs(minetest.get_connected_players()) do
 		local names = players:get_player_name()
-		if minetest.check_player_privs(names, {partyspy=true}) then
+		if minetest.check_player_privs(names, {pspy=true}) then
 			local cparty = mod_storage:get_string(name.."_party")
 			if cparty ~= nil then
 				if cparty ~= mod_storage:get_string(names.."_party") then
@@ -142,6 +142,9 @@ end
 
 party.leave = function(name)
 	local player = minetest.get_player_by_name(name)
+	
+	squad.leave(name)
+	
 	mod_storage:set_string(name.."_party", nil)
 	mod_storage:set_string(name.."_officer", nil)
 	mod_storage:set_string(name.."_leader", nil)
@@ -574,11 +577,7 @@ minetest.register_chatcommand("p", {
 				-- kicking online player
 				if minetest.get_player_by_name(param2) ~= nil then
 					party.send_notice_all(name, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by "..name)
-					local kplayer = minetest.get_player_by_name(param2)
-					kplayer:set_nametag_attributes({text = param2})
-					mod_storage:set_string(param2.."_party", nil)
-					mod_storage:set_string(param2.."_officer", nil)
-					kplayer:set_nametag_attributes({text = param2})
+					party.leave(param2)
 				end
 			
 			-- if player doesn't exist
