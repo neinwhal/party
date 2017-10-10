@@ -1,6 +1,5 @@
-local party = {}
-local mod_storage = minetest.get_mod_storage()
-
+party = {}
+mod_storage = minetest.get_mod_storage()
 
 -- =======================
 -- ===== PLAYER LIST =====
@@ -33,7 +32,7 @@ minetest.register_on_joinplayer(function(player)
 	end
 
 	if player_list_l == "" then
-		local player_list_e = {}
+		player_list_e = {}
 	else player_list_e = minetest.deserialize(player_list_l)
 	end
 
@@ -50,14 +49,15 @@ party.send_notice_all = function(name, message)
 	for _,players in ipairs(minetest.get_connected_players()) do
 		local names = players:get_player_name()
 		if mod_storage:get_string(name.."_party") == mod_storage:get_string(names.."_party") then
-			minetest.chat_send_player(names, minetest.colorize("green", "[Party] = PARTY-NOTICE = ")..""..message)
+			minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party] = PARTY-NOTICE = ")..""..message)
 		end
 	end
 end
 
+
 -- private notice
 party.send_notice = function(name, message)
-	minetest.chat_send_player(name, minetest.colorize("green", "[Party] = NOTICE = ")..""..message)
+	minetest.chat_send_player(name, minetest.colorize("limegreen", "[Party] = NOTICE = ")..""..message)
 end
 
 -- chat spy for admins
@@ -69,7 +69,7 @@ party.chat_spy = function(name, message)
 			local cparty = mod_storage:get_string(name.."_party")
 			if cparty ~= nil then
 				if cparty ~= mod_storage:get_string(names.."_party") then
-					minetest.chat_send_player(names, minetest.colorize("orange", "[SPY]").." [PARTY:"..mod_storage:get_string(cparty.."_leader").."] <"..name.."> "..message)
+					minetest.chat_send_player(names, minetest.colorize("yellow", "[SPY]").." [PARTY:"..mod_storage:get_string(cparty.."_leader").."] <"..name.."> "..message)
 				end
 			end
 		end
@@ -122,6 +122,14 @@ party.check_tag = function(name, tag)
 	end
 end
 
+-- =======================
+-- ====== LOAD FILES =====
+-- =======================
+dofile(minetest.get_modpath("party").."/squad.lua")
+
+-- =======================
+-- ===== MORE HELPERS ====
+-- =======================
 party.join = function(name, partyname)
 	local cparty_l = mod_storage:get_string(partyname.."_leader")
 	local player = minetest.get_player_by_name(name)
@@ -162,31 +170,31 @@ minetest.register_chatcommand("p", {
 		local player_list = minetest.deserialize(mod_storage:get_string("playerlist"))
 		
 		if param1 == "help" then
-			party.send_notice(name, "/all --- Send message to main chat (if you are in a party)")
-			party.send_notice(name, "Add '@' in front of your chat to send to main chat (if you are in a party).")
-			party.send_notice(name, "/p --- List your current party")
-			party.send_notice(name, "/p list --- List online members of your party")
-			party.send_notice(name, "/p list all --- List all members of your party")
-			party.send_notice(name, "/p list <playername> --- List party of player")
-			party.send_notice(name, "/p leave --- Leave your party")
-			party.send_notice(name, "/p create <partyname> --- Create a party")
-			party.send_notice(name, "/p join <partyname> --- Join a party")
-			party.send_notice(name, "/p invite <yes/no> --- Accept/ reject a party invite")
-			party.send_notice(name, "/p noinvite --- Toggle noinvites, if on, reject all parties invites automatically")
+			party.send_notice(name, minetest.colorize("cyan", "@<message>").." --- Send message to global chat (if you are in a party).")
+			party.send_notice(name, minetest.colorize("cyan", "/all <message>").." --- Send message to global chat (if you are in a party).")
+			party.send_notice(name, minetest.colorize("cyan", "/p").." --- List your current party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p list").." --- List online members of your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p list all").." --- List all members of your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p list <playername>").." --- List party of player.")
+			party.send_notice(name, minetest.colorize("cyan", "/p leave").." --- Leave your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p create <partyname>").." --- Create a party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p join <partyname>").." --- Join a party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p invite <yes/no>").." --- Accept/ reject a party invite.")
+			party.send_notice(name, minetest.colorize("cyan", "/p noinvite").." --- Toggle noinvites, if on, reject all parties invites automatically.")
 			
-			party.send_notice(name, " OFFICERS/ LEADER COMMANDS:")
-			party.send_notice(name, "/p kick <playername> --- Kick a player out of your party")
-			party.send_notice(name, "/p invite <playername> --- Invite a player to join your party")
-			party.send_notice(name, "/p <accept/reject> <playername> --- Accept/ reject a join request (if joining method is set to [Request Mode])")
+			party.send_notice(name, " ===== PARTY OFFICERS/ PARTY LEADER COMMANDS: ===== ")
+			party.send_notice(name, minetest.colorize("cyan", "/p kick <playername>").." --- Kick a player out of your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p invite <playername>").." --- Invite a player to join your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p <accept/reject> <playername>").." --- Accept/ reject a join request (if joining method is set to [Request Mode])")
 
-			party.send_notice(name, " LEADER-ONLY COMMANDS:")
-			party.send_notice(name, "/p disband --- Disband your party")
-			party.send_notice(name, "/p rename <new_partyname> --- Rename your party")
-			party.send_notice(name, "/p officer <playername> --- Toogle a player's officer position. Officers can kick & invite.")
-			party.send_notice(name, "/p lock <open/active/request/private> --- Toggle joining method for your party")
+			party.send_notice(name, " ===== PARTY LEADER-ONLY COMMANDS: ===== ")
+			party.send_notice(name, minetest.colorize("cyan", "/p disband").." --- Disband your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p rename <new_partyname>").." --- Rename your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p officer <playername>").." --- Toogle a player's officer position. Officers can kick & invite.")
+			party.send_notice(name, minetest.colorize("cyan", "/p lock <open/active/request/private>").." --- Toggle joining method for your party")
 			
-			party.send_notice(name, " ADMIN COMMANDS:")
-			party.send_notice(name, "/p forcedisband <partyname> --- Forcefully disband a party (requires 'ban' privilege)")
+			party.send_notice(name, " ===== ADMIN COMMANDS: ===== ")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcedisband <partyname>").." --- Forcefully disband a party (requires 'ban' privilege)")
 			
 			-- TODO
 			-- formspecs equivalents
@@ -461,10 +469,10 @@ minetest.register_chatcommand("p", {
 				party.send_notice_all(name, "[Request mode] Join requests is enabled for "..name.."'s party ["..cparty_l.."].")
 			elseif param2 == "private" then
 				mod_storage:set_string(name.."_lock", param2)
-				party.send_notice_all(name, "[Private mode] Joining is disabled for "..name.."'s party ["..cparty_l.."].")
+				party.send_notice_all(name, "[Private mode] Public joining is disabled for "..name.."'s party ["..cparty_l.."].")
 			elseif param2 == "open" then
 				mod_storage:set_string(name.."_lock", param2)
-				party.send_notice_all(name, "[Public mode] Public joining is enabled for "..name.."'s party ["..cparty_l.."].")
+				party.send_notice_all(name, "[Open mode] Public joining is enabled for "..name.."'s party ["..cparty_l.."].")
 			end
 		
 		-- /p officer
@@ -534,7 +542,7 @@ minetest.register_chatcommand("p", {
 				
 				-- kicking online player
 				if minetest.get_player_by_name(param2) ~= nil then
-					party.send_notice_all(name, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."].")
+					party.send_notice_all(name, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by "..name)
 					local kplayer = minetest.get_player_by_name(param2)
 					kplayer:set_nametag_attributes({text = param2})
 					mod_storage:set_string(param2.."_party", nil)
@@ -740,7 +748,7 @@ minetest.register_on_chat_message(function(name, message)
 		end
 		
 		if cparty ~= "" and cparty == mod_storage:get_string(names.."_party") and not string.match(message, "^@(.+)") then
-			minetest.chat_send_player(names, minetest.colorize("green", "[Party] ").."<"..name.."> " ..message)
+			minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party] ").."<"..name.."> " ..message)
 			party.chat_spy(names, message)
 		end
 	end
