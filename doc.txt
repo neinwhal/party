@@ -1,0 +1,27 @@
+=====================================================
+=================== DOCUMENTATION ===================
+=====================================================
+This document list how the mod stores information.
+
+Note that mod storage values cannot be obtainable
+outside of this mod, an attribute counterpart will
+eventually be added to the important values so it
+will support external mods.
+===================================================== PARTY
+=== mod_storage:<playername>_party		-- player's leadername -- rather than the actual party name, this value is the leadername because it makes it easier to obtain values below with <leadername>
+=== mod_storage:<playername>_officer	-- if officer then true, else empty
+=== mod_storage:<playername>_title		-- chat title name
+=== mod_storage:<leadername>_leader		-- <leader>'s party name
+=== mod_storage:<leadername>_lock		-- join status of party <empty/active/request/private>
+-----------------------------------------------------
+=== attribute:partyinvite		-- if invited, value is inviter's name
+=== attribute:partypending		-- for request mode parties only, if player sends request to join a party, value is party's leadername 
+=== attribute:partynoinvite		-- if true all invites are ignored
+=== attribute:partypvp			-- if true, pvp between party members are enabled
+===================================================== SQUAD
+=== mod_storage:<playername>_squad				-- player's squad name
+=== mod_storage:<playername>_squad_no <1-7>		-- squad position -- used for determining hud locations
+=== mod_storage:<playername>_squad_leader		-- if player is leader, value == squad name
+=== mod_storage:<playername>_squad_lock			-- join status of squad <empty/private>
+-----------------------------------------------------
+=== attribute:squadinvite		-- if invited, value is inviter's name

@@ -179,6 +179,7 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p").." --- List your current party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list").." --- List online members of your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list all").." --- List all members of your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p partylist").." --- Gives full list of parties created.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list <playername>").." --- List party of player.")
 			party.send_notice(name, minetest.colorize("cyan", "/p create <partyname>").." --- Create a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p join <partyname>").." --- Join a party.")
@@ -201,6 +202,8 @@ minetest.register_chatcommand("p", {
 			
 			party.send_notice(name, " ===== ADMIN COMMANDS: ===== ")
 			party.send_notice(name, minetest.colorize("cyan", "/p forcedisband <partyname>").." --- Forcefully disband a party (requires 'ban' privilege)")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcejoin <partyname>").." --- Forcefully let yourself in a party regardless of its lock mode (requires 'ban' privilege)")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcekick <playername>").." --- Forcefully kick a player from a party (requires 'kick' privilege)")
 			
 			-- TODO
 			-- formspecs equivalents
@@ -208,10 +211,6 @@ minetest.register_chatcommand("p", {
 			-- party.send_notice(name, "/p chat <party/ally/global> --- Toggle between party chat, ally chat, global chat")
 			-- party.send_notice(name, "/p home --- Teleports to party home (set by leader)")
 			-- party.send_notice(name, "/p home set --- Set a party home")
-			
-			-- party.send_notice(name, "/p partylist --- Gives a full list of parties, (requires 'kick' privilege)")
-			-- party.send_notice(name, "/p forcekick <playername> --- Forcefully kick a player from a party (requires 'kick' privilege)")
-			-- party.send_notice(name, "/p forcejoin <playername> --- Forcefully let yourself in a party regardless of its lock mode (requires 'kick' privilege)")
 			
 			-- party.send_notice(name, "/p ally/enemy/neutral <partyname> --- Toggle diplomacy status with another party. Allied parties will have no friendly fire and there will be ally chat.")
 			-- party.send_notice(name, "/p ally list --- Ally list.")
@@ -293,7 +292,18 @@ minetest.register_chatcommand("p", {
 				end
 			end
 			
-		
+		elseif param1 == "partylist" then
+			local player_list = minetest.deserialize(mod_storage:get_string("playerlist"))
+			local partylist = ""
+			for _,playernames in ipairs(player_list) do
+				local cparty_l = mod_storage:get_string(playernames.."_leader")
+				if cparty_l ~= "" then
+					partylist = partylist .. cparty_l .. ", "
+				end
+			end
+			party.send_notice(name, "Full list of parties: ") 
+			party.send_notice(name, partylist)
+			
 		elseif param1 == "leave" then
 			if party.check(name, 1) == true then
 				return
@@ -484,7 +494,7 @@ minetest.register_chatcommand("p", {
 				mod_storage:set_string(name.."_lock", param2)
 				party.send_notice_all(name, "[Private mode] Public joining is disabled for "..name.."'s party ["..cparty_l.."].")
 			elseif param2 == "open" then
-				mod_storage:set_string(name.."_lock", param2)
+				mod_storage:set_string(name.."_lock", nil)
 				party.send_notice_all(name, "[Open mode] Public joining is enabled for "..name.."'s party ["..cparty_l.."].")
 			end
 		
@@ -569,7 +579,7 @@ minetest.register_chatcommand("p", {
 				
 				-- kicking offline player, give a mark to notify player when he logins
 				if minetest.get_player_by_name(param2) == nil then
-					party.send_notice_all(name, param2.."[offline] was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."].")
+					party.send_notice_all(name, param2.."[offline] was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by "..name)
 					mod_storage:set_string(param2.."_party", "#")
 					mod_storage:set_string(param2.."_officer", nil)
 				end
@@ -728,6 +738,64 @@ minetest.register_chatcommand("p", {
 				
 			else party.send_notice(name, "Party does not exist!")
 			end
+			
+		elseif param1 == "forcejoin" and param2 ~= nil then
+			if not minetest.check_player_privs(name, {ban=true}) then
+				party.send_notice(name, "You are not an admin!")
+				return
+			end
+			
+			if cparty ~= "" then
+				local cparty_l = mod_storage:get_string(cparty.."_leader")
+				party.send_notice(name, "You are already in "..cparty.."'s party ["..cparty_l.."].")
+				return
+			end
+			
+			if party.check_tag(name, param2) == true then
+				local leadername = ""
+				for _,playernames in ipairs(player_list) do
+					if param2 == mod_storage:get_string(playernames.."_leader") then
+						leadername = leadername .. playernames
+					end
+				end
+				local cparty = leadername
+				party.join(name, cparty)
+			end
+	
+		elseif param1 == "forcekick" and param2 ~= nil then
+			if not minetest.check_player_privs(name, {kick=true}) then
+				party.send_notice(name, "You are not a mod!")
+				return
+			end
+			
+			if minetest.player_exists(param2) then
+				local cparty = mod_storage:get_string(param2.."_party")
+				-- attempt to kick self
+				if param2 == name then
+					party.send_notice(name, "You can't kick yourself!")
+					return
+				-- attempt to kick player that doesn't have a party
+				elseif cparty == "" then
+					party.send_notice(name, param2.." is not in a party!")
+					return
+				-- attempt to kick leader
+				elseif mod_storage:get_string(param2.."_leader") ~= "" then
+					party.send_notice(name, "The leader can't be kicked! Use /p forcedisband instead.")
+					return
+				end
+				
+				-- kicking offline player, give a mark to notify player when he logins
+				if minetest.get_player_by_name(param2) == nil then
+					party.send_notice_all(param2, param2.."[offline] was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by an admin, "..name)
+					mod_storage:set_string(param2.."_party", "+")
+					mod_storage:set_string(param2.."_officer", nil)
+					party.send_notice(name, "Kicked "..param2.."[offline] from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
+				else
+					party.send_notice_all(param2, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by an admin, "..name)
+					party.leave(param2)
+					party.send_notice(name, "Kicked "..param2.." from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
+				end
+			end
 		
 		else party.send_notice(name, "ERROR: Command is invalid! For help, use the command '/p help'")
 		end
@@ -842,6 +910,10 @@ minetest.register_on_joinplayer(function(player)
 	elseif cparty == "#" then
 		local cparty_l = mod_storage:get_string(cparty.."_leader")
 		party.send_notice(name, "While you were away, you were kicked from your party!")
+		party.leave(name)
+	elseif cparty == "+" then
+		local cparty_l = mod_storage:get_string(cparty.."_leader")
+		party.send_notice(name, "While you were away, you were kicked from your party by an admin!")
 		party.leave(name)
 	elseif cparty == "=" then
 		local cparty_l = mod_storage:get_string(cparty.."_leader")
