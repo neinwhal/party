@@ -9,5 +9,5 @@ https://forum.minetest.net/viewtopic.php?f=9&t=18588
 #### License:
 
 Code: *LGPL v2.1*
-
+Media: WTFPL*
 -----------------------------------------------------------------------------------------------
