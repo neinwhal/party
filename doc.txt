@@ -13,11 +13,13 @@ will support external mods.
 === mod_storage:<playername>_title		-- chat title name
 === mod_storage:<leadername>_leader		-- <leader>'s party name
 === mod_storage:<leadername>_lock		-- join status of party <empty/active/request/private>
+=== mod_storage:<leadername>_home		-- home of party <empty/active/request/private>
 -----------------------------------------------------
 === attribute:partyinvite		-- if invited, value is inviter's name
 === attribute:partypending		-- for request mode parties only, if player sends request to join a party, value is party's leadername 
 === attribute:partynoinvite		-- if true all invites are ignored
 === attribute:partypvp			-- if true, pvp between party members are enabled
+=== attribute:partychat			-- determines where the chat message is sent, main == global/main channel | party == party channel | squad == squad channel
 ===================================================== SQUAD
 === mod_storage:<playername>_squad				-- player's squad name
 === mod_storage:<playername>_squad_no <1-7>		-- squad position -- used for determining hud locations

@@ -168,6 +168,7 @@ squad.join = function(name, tag)
 	
 	squad.send_notice_all(name, name.." has joined the ["..tag.."] squad")
 	player:set_nametag_attributes({text = "["..cparty_l.."-"..tag.."] "..name})
+	player:set_attribute("partychat", "squad")
 end
 
 squad.replace_hud = function(name, oldno, newno)
@@ -202,6 +203,7 @@ squad.leave = function(name, tag)
 	local player = minetest.get_player_by_name(name)
 	local csquad = mod_storage:get_string(name.."_squad")
 	local csquad_no = tonumber(mod_storage:get_string(name.."_squad_no"))
+	player:set_attribute("partychat", "party")
 	
 	if csquad == "" then
 		return
@@ -291,28 +293,7 @@ minetest.register_chatcommand("sq", {
 			return
 		end
 		
-		if param1 == "debug" then
-			if csquad == "" then
-				squad.send_notice(name, "You are not in a squad!")
-				return
-			end
-			
-			local listnames = ""
-			for _,players in ipairs(minetest.get_connected_players()) do
-				local playernames = players:get_player_name()
-				if cparty == mod_storage:get_string(playernames.."_party") and csquad == mod_storage:get_string(playernames.."_squad") then
-					local msquad_n = mod_storage:get_string(playernames.."_squad_no")
-					listnames = listnames .. msquad_n .. ", "
-				end
-			end
-			squad.send_notice(name, listnames)
-		elseif param1 == "id" then
-			squad.send_notice(name, "BG: "..minetest.serialize(ids_bg))
-			squad.send_notice(name, "HP: "..minetest.serialize(ids_hp))
-			squad.send_notice(name, "TAG: "..minetest.serialize(ids_tag))
-			squad.send_notice(name, "HPTAG: "..minetest.serialize(ids_hptag))
-			
-		elseif param1 == "help" then
+		if param1 == "help" then
 			squad.send_notice(name, "NOTE: Unlike parties, squads do not last permanently, you automatically leave if you leave the game and if the squad leader does so, the squad is automatically disbanded.")
 			squad.send_notice(name, minetest.colorize("cyan", "/sq join <squadname>").. " --- Join a squad.")
 			squad.send_notice(name, minetest.colorize("cyan", "/sq leave").. " --- Leave your squad.")

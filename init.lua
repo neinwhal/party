@@ -138,6 +138,7 @@ party.join = function(name, partyname)
 	player:set_attribute("partypending", nil)
 	player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
 	party.send_notice_all(name, name.." has joined "..partyname.."'s party ["..cparty_l.."].")
+	player:set_attribute("partychat", "party")
 end
 
 party.leave = function(name)
@@ -149,7 +150,10 @@ party.leave = function(name)
 	mod_storage:set_string(name.."_officer", nil)
 	mod_storage:set_string(name.."_leader", nil)
 	mod_storage:set_string(name.."_lock", nil)
+	mod_storage:set_string(name.."_title", nil)
+	mod_storage:set_string(name.."_home", nil)
 	player:set_nametag_attributes({text = name})
+	player:set_attribute("partychat", "main")
 end
 
 
@@ -175,7 +179,6 @@ minetest.register_chatcommand("p", {
 		
 		if param1 == "help" then
 			party.send_notice(name, minetest.colorize("cyan", "@<message>").." --- Send message to global chat (if you are in a party).")
-			party.send_notice(name, minetest.colorize("cyan", "/all <message>").." --- Send message to global chat (if you are in a party).")
 			party.send_notice(name, minetest.colorize("cyan", "/p").." --- List your current party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list").." --- List online members of your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list all").." --- List all members of your party.")
@@ -184,33 +187,35 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p create <partyname>").." --- Create a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p join <partyname>").." --- Join a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p leave").." --- Leave your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p home").." --- Teleport to your party home (if your leader has one set).")
+			party.send_notice(name, minetest.colorize("cyan", "/p chat <main/party/squad>").." --- Switch your chat input. Leave empty to get your current chat input.")
 			party.send_notice(name, minetest.colorize("cyan", "/p invite <yes/no>").." --- Accept/ reject a party invite.")
 			party.send_notice(name, minetest.colorize("cyan", "/p noinvite").." --- Toggle noinvites, if on, reject all parties invites automatically.")
 			party.send_notice(name, minetest.colorize("cyan", "/p pvp").." --- Toggle friendly fire, if two players have friendly fire enabled even though they are in the same party, they can fight.")
 			
 			party.send_notice(name, " ===== PARTY OFFICERS/ PARTY LEADER COMMANDS: ===== ")
-			party.send_notice(name, minetest.colorize("cyan", "/p kick <playername>").." --- Kick a player out of your party")
-			party.send_notice(name, minetest.colorize("cyan", "/p invite <playername>").." --- Invite a player to join your party")
-			party.send_notice(name, minetest.colorize("cyan", "/p <accept/reject> <playername>").." --- Accept/ reject a join request (if joining method is set to [Request Mode])")
+			party.send_notice(name, minetest.colorize("cyan", "/p kick <playername>").." --- Kick a player out of your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p invite <playername>").." --- Invite a player to join your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p <accept/reject> <playername>").." --- Accept/ reject a join request (if joining method is set to [Request Mode]).")
 
 			party.send_notice(name, " ===== PARTY LEADER-ONLY COMMANDS: ===== ")
-			party.send_notice(name, minetest.colorize("cyan", "/p disband").." --- Disband your party")
-			party.send_notice(name, minetest.colorize("cyan", "/p rename <new_partyname>").." --- Rename your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p disband").." --- Disband your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p rename <new_partyname>").." --- Rename your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p sethome").." --- Set your party home.")
+			party.send_notice(name, minetest.colorize("cyan", "/p sethome remove").." --- Remove your party home.")
 			party.send_notice(name, minetest.colorize("cyan", "/p officer <playername>").." --- Toogle a player's officer position. Officers can kick & invite.")
-			party.send_notice(name, minetest.colorize("cyan", "/p lock <open/active/request/private>").." --- Toggle joining method for your party")
+			party.send_notice(name, minetest.colorize("cyan", "/p lock <open/active/request/private>").." --- Toggle joining method for your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p title <playername> <title>").." --- Adds a title to a player in party chat.")
 			
 			party.send_notice(name, " ===== ADMIN COMMANDS: ===== ")
-			party.send_notice(name, minetest.colorize("cyan", "/p forcedisband <partyname>").." --- Forcefully disband a party (requires 'ban' privilege)")
-			party.send_notice(name, minetest.colorize("cyan", "/p forcejoin <partyname>").." --- Forcefully let yourself in a party regardless of its lock mode (requires 'ban' privilege)")
-			party.send_notice(name, minetest.colorize("cyan", "/p forcekick <playername>").." --- Forcefully kick a player from a party (requires 'kick' privilege)")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcedisband <partyname>").." --- Forcefully disband a party (requires 'ban' privilege).")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcejoin <partyname>").." --- Forcefully let yourself in a party regardless of its lock mode (requires 'ban' privilege).")
+			party.send_notice(name, minetest.colorize("cyan", "/p forcekick <playername>").." --- Forcefully kick a player from a party (requires 'kick' privilege).")
 			
 			-- TODO
 			-- formspecs equivalents
 			-- party.send_notice(name, "/p colour <partycolour> --- Change colour of party tag")
-			-- party.send_notice(name, "/p chat <party/ally/global> --- Toggle between party chat, ally chat, global chat")
-			-- party.send_notice(name, "/p home --- Teleports to party home (set by leader)")
-			-- party.send_notice(name, "/p home set --- Set a party home")
+			-- party.send_notice(name, "/p customrank <player> <rank> --- Custom ranks -- for customizing certain party features later on.")
 			
 			-- party.send_notice(name, "/p ally/enemy/neutral <partyname> --- Toggle diplomacy status with another party. Allied parties will have no friendly fire and there will be ally chat.")
 			-- party.send_notice(name, "/p ally list --- Ally list.")
@@ -332,6 +337,7 @@ minetest.register_chatcommand("p", {
 				mod_storage:set_string(name.."_party", name)
 				mod_storage:set_string(name.."_leader", param2)
 				player:set_attribute("partyinvite", nil)
+				player:set_attribute("partychat", "party")
 				player:set_nametag_attributes({text = "["..param2.."] "..name})
 				
 				party.send_notice(name, "You created "..name.."'s party ["..param2.."].")
@@ -393,6 +399,41 @@ minetest.register_chatcommand("p", {
 			else party.send_notice(name, "Party does not exist!")
 			end
 			
+		-- /p home
+		elseif param1 == "home" then
+			if party.check(name, 1) == true then
+				return
+			end
+			
+			local cparty_home = mod_storage:get_string(cparty.."_home")
+			if cparty_home ~= "" then
+				party.send_notice(name, "Teleporting to party home...")
+				player:set_pos(minetest.deserialize(cparty_home))
+			else party.send_notice(name, "Party home is not set by leader!")
+			end
+			
+		elseif param1 == "chat" then
+			if party.check(name, 1) == true then
+				return
+			end
+			
+			if (param2 == "main" or param2 == "global") then
+				player:set_attribute("partychat", "main")
+				party.send_notice(name, "Chat input set to main chat.")
+			elseif param2 == "party" then
+				player:set_attribute("partychat", "party")
+				party.send_notice(name, "Chat input set to party chat.")
+			elseif param2 == "squad" then
+				if mod_storage:get_string(name.."_squad") == "" then
+					party.send_notice(name, "You are not in a squad!")
+					return
+				end
+				player:set_attribute("partychat", "squad")
+				party.send_notice(name, "Chat input set to squad chat.")
+			elseif param2 == nil then
+				party.send_notice(name, "Current chat input is set to "..player:get_attribute("partychat").." chat.")
+			end
+		
 		-- /p noinvite
 		elseif param1 == "noinvite" then
 			if cparty == "" then
@@ -497,6 +538,20 @@ minetest.register_chatcommand("p", {
 				mod_storage:set_string(name.."_lock", nil)
 				party.send_notice_all(name, "[Open mode] Public joining is enabled for "..name.."'s party ["..cparty_l.."].")
 			end
+			
+		elseif param1 == "sethome" then
+			if party.check(name, 3) == true then
+				return
+			end
+			
+			if param2 == "remove" then
+				mod_storage:set_string(cparty.."_home", nil)
+				party.send_notice(name, "Party home removed!")
+			else
+				mod_storage:set_string(cparty.."_home", minetest.serialize(player:get_pos()))
+				party.send_notice(name, "Party home has been set to "..minetest.serialize(player:get_pos()))
+			end
+			
 		
 		-- /p officer
 		elseif param1 == "officer" and param2 ~= nil then
@@ -803,79 +858,75 @@ minetest.register_chatcommand("p", {
 	end,
 })
 
-minetest.register_chatcommand("all", {
-	description = "Chat on main chat if in party.",
-	privs = {shout=true},
-	func = function(name, param)
-		local player = minetest.get_player_by_name(name)
-		local cparty = mod_storage:get_string(name.."_party")
-		if cparty == "" then
-			party.send_notice(name, "You are not in a party! You can talk normally to main chat without commands.")
-		else
-			local cparty_l = mod_storage:get_string(cparty.."_leader")
-			for _,players in ipairs(minetest.get_connected_players()) do
-				local names = players:get_player_name()
-				minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..param)
-			end
-		end
-		
-		-- chat logging
-		if cparty ~= "" then
-			minetest.log("action", "CHAT : <"..name.."> : "..param)
-		end
-	end,
-})
-
-
 minetest.register_on_chat_message(function(name, message)
 	local player = minetest.get_player_by_name(name)
 	local cparty = mod_storage:get_string(name.."_party")
 	local cparty_title = mod_storage:get_string(name.."_title")
+	local csquad = mod_storage:get_string(name.."_squad")
+	local cinput = player:get_attribute("partychat")
 	
 	-- check if player has shout privs
 	if not minetest.check_player_privs(name, {shout=true}) then
 		return
 	end
 	
-	for _,players in ipairs(minetest.get_connected_players()) do
-		local names = players:get_player_name()
-		
-		if string.match(message, "^@(.+)") then
-			local cparty_l = mod_storage:get_string(cparty.."_leader")
-			
-			minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..string.gsub(message, "^@", ""))
-		end
-		
-		if cparty ~= "" and cparty == mod_storage:get_string(names.."_party") and not string.match(message, "^@(.+)") then
-			if cparty_title ~= "" then
-				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
-				party.chat_spy(names, message)
-			elseif cparty_title == "" then
-				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..name.."> " ..message)
-				party.chat_spy(names, message)
-			end
-		end
-	end
 
-	-- main chat
-	for _,players in ipairs(minetest.get_connected_players()) do
-		local names = players:get_player_name()
-		if cparty == "" then
-			minetest.chat_send_player(names, "<"..name.."> " ..message)
-			
-		end
-	end
-	
 	-- chat logging
 	if cparty == "" then
 		minetest.log("action", "CHAT : <"..name.."> : "..message)
 	elseif cparty ~= "" then
+		local cparty_l = mod_storage:get_string(cparty.."_leader")
+		
 		if string.match(message, "^@(.+)") then
 			minetest.log("action", "CHAT : <"..name.."> : "..string.gsub(message, "^@", ""))
-		else minetest.log("action", "CHAT [PARTY] : <"..name.."> : "..message)
+		elseif cinput == "main" then
+			minetest.log("action", "CHAT : <"..name.."> : "..string.gsub(message, "^@", ""))
+		else minetest.log("action", "CHAT [PARTY:"..cparty_l.."] : <"..name.."> : "..message)
 		end
 	end
 	
+	
+	for _,players in ipairs(minetest.get_connected_players()) do
+		local names = players:get_player_name()
+		
+		-- Main chat
+		if cparty == "" then
+			minetest.chat_send_player(names, "<"..name.."> " ..message)
+		end
+		
+		-- Main chat (@)
+		if string.match(message, "^@(.+)") and cparty ~= "" then
+			local cparty_l = mod_storage:get_string(cparty.."_leader")
+			minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..string.gsub(message, "^@", ""))
+		end
+		
+		-- Main chat (chat input)
+		if cinput == "main" and cparty ~= "" and not string.match(message, "^@(.+)") then
+			local cparty_l = mod_storage:get_string(cparty.."_leader")
+			minetest.chat_send_player(names, "<Party:"..cparty_l.." | "..name.."> "..message)
+		end
+		
+		-- Party Chat
+		if cparty == mod_storage:get_string(names.."_party") and cinput == "party" and not string.match(message, "^@(.+)") then
+			if cparty_title ~= "" then
+				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
+				party.chat_spy(name, message)
+			elseif cparty_title == "" then
+				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..name.."> " ..message)
+				party.chat_spy(name, message)
+			end
+		-- Squad chat
+		elseif cparty == mod_storage:get_string(names.."_party") and csquad == mod_storage:get_string(names.."_squad") and cinput == "squad" and not string.match(message, "^@(.+)") then
+			if cparty_title ~= "" then
+				minetest.chat_send_player(names, minetest.colorize("orange", "[Squad]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
+				party.chat_spy(name, message)
+			elseif cparty_title == "" then
+				minetest.chat_send_player(names, minetest.colorize("orange", "[Squad]").." <"..name.."> " ..message)
+				party.chat_spy(name, message)
+			end
+		end
+	end
+
 	return true
 end)
 
