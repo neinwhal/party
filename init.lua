@@ -1,5 +1,15 @@
 party = {}
 mod_storage = minetest.get_mod_storage()
+-- =======================
+-- === CUSTOM SETTINGS ===
+-- =======================
+PARTY_TAG_COLOUR = "lightgrey"	-- default colour of party tags
+
+PARTY_PARTY_NAME_LENGTH = 8		-- max length for party name/ tag
+PARTY_PARTY_JOIN_MODE = ""		-- default join mode for parties <<< empty(open)/ active / request / private >>>
+
+PARTY_SQUAD_NAME_LENGTH = 8 	-- max length for squad name/ tag
+PARTY_SQUAD_JOIN_MODE = ""		-- default join mode for squads <<< empty(open) / private >>>
 
 -- =======================
 -- ===== PLAYER LIST =====
@@ -138,7 +148,7 @@ party.join = function(name, partyname)
 	player:set_attribute("partypending", nil)
 	local tcolour = mod_storage:get_string(partyname.."_colour")
 	if tcolour == "" then
-		tcolour = "lightgrey"
+		tcolour = PARTY_TAG_COLOUR
 	end
 	player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
 	party.send_notice_all(name, name.." has joined "..partyname.."'s party ["..cparty_l.."].")
@@ -330,8 +340,8 @@ minetest.register_chatcommand("p", {
 			end
 		
 		elseif param1 == "create" and param2 ~= nil then
-			if string.len(param2) > 8 then
-				party.send_notice(name, "Nametag is too long! 8 is the maximum amount of characters")
+			if string.len(param2) > PARTY_PARTY_NAME_LENGTH then
+				party.send_notice(name, "Nametag is too long! "..PARTY_PARTY_NAME_LENGTH.." is the maximum amount of characters")
 				return
 			end
 			
@@ -345,11 +355,12 @@ minetest.register_chatcommand("p", {
 			if cparty == "" then
 				mod_storage:set_string(name.."_party", name)
 				mod_storage:set_string(name.."_leader", param2)
+				mod_storage:set_string(name.."_lock", PARTY_PARTY_JOIN_MODE)
 				player:set_attribute("partyinvite", nil)
 				player:set_attribute("partychat", "party")
 				local tcolour = mod_storage:get_string(name.."_colour")
 				if tcolour == "" then
-					tcolour = "lightgrey"
+					tcolour = PARTY_TAG_COLOUR
 				end
 				player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."]").." "..name})
 				
@@ -517,8 +528,8 @@ minetest.register_chatcommand("p", {
 				return
 			end
 			-- check if new name is too long
-			if string.len(param2) > 8 then
-				party.send_notice(name, "Nametag is too long! 8 is the maximum amount of characters")
+			if string.len(param2) > PARTY_PARTY_NAME_LENGTH then
+				party.send_notice(name, "Nametag is too long! "..PARTY_PARTY_NAME_LENGTH.." is the maximum amount of characters")
 				return
 			end
 			if party.check_tag(name, param2) == true then
@@ -531,7 +542,7 @@ minetest.register_chatcommand("p", {
 			-- update online player nametags
 			local tcolour = mod_storage:get_string(name.."_colour")
 			if tcolour == "" then
-				tcolour = "lightgrey"
+				tcolour = PARTY_TAG_COLOUR
 			end
 			for _,players in ipairs(minetest.get_connected_players()) do
 				local names = players:get_player_name()
@@ -554,7 +565,7 @@ minetest.register_chatcommand("p", {
 			local cparty_l = mod_storage:get_string(cparty.."_leader")
 			local tcolour = mod_storage:get_string(cparty.."_colour")
 			if tcolour == "" then
-				tcolour = "lightgrey"
+				tcolour = PARTY_TAG_COLOUR
 			end
 			for _,players in ipairs(minetest.get_connected_players()) do
 				local names = players:get_player_name()
@@ -1044,7 +1055,7 @@ minetest.register_on_joinplayer(function(player)
 		else
 			local tcolour = mod_storage:get_string(cparty.."_colour")
 			if tcolour == "" then
-				tcolour = "lightgrey"
+				tcolour = PARTY_TAG_COLOUR
 			end
 			player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
 		end

@@ -329,8 +329,8 @@ minetest.register_chatcommand("sq", {
 				return
 			end
 			-- check if tag is too long
-			if string.len(param2) > 7 then
-				party.send_notice(name, "Nametag is too long! 8 is the maximum amount of characters")
+			if string.len(param2) > PARTY_SQUAD_NAME_LENGTH then
+				party.send_notice(name, "Nametag is too long! "..PARTY_SQUAD_NAME_LENGTH.." is the maximum amount of characters")
 				return
 			end
 			-- check if tag exists
@@ -343,8 +343,9 @@ minetest.register_chatcommand("sq", {
 			if csquad == "" then
 				local cparty_l = mod_storage:get_string(cparty.."_leader")
 				party.send_notice_all(name, name.." created the ["..param2.."] squad in "..cparty.."'s party ["..cparty_l.."].")
-
+				
 				mod_storage:set_string(name.."_squad_leader", param2)
+				mod_storage:set_string(name.."_squad_lock", PARTY_SQUAD_JOIN_MODE)
 				squad.join(name, param2)
 
 			else squad.send_notice(name, "You are already in ["..csquad.."] squad.")
