@@ -376,10 +376,8 @@ minetest.register_chatcommand("sq", {
 					end
 				else squad.send_notice(name, "Squad ["..param2.."] does not exist in your party!")
 				end
-			else squad.send_notice(name, "You are not a squad leader not the party leader!")
+			else squad.send_notice(name, "You are not a squad leader nor the party leader!")
 			end
-			
-		--elseif param1 == "leader" and param2 ~= nil then
 			
 		
 		elseif param1 == "lock" and param2 ~= nil then
@@ -585,7 +583,7 @@ minetest.register_on_leaveplayer(function(player)
 	end
 	-- disband squad if squad leader leaves
 	if mod_storage:get_string(name.."_squad_leader") == csquad then
-		squad.send_notice_all(name, "The squad is disbanded because the squad leader, "..name..", has left the game.")
+		squad.send_notice_all(name, "The squad ["..csquad.."] is disbanded because the squad leader, "..name..", has left the game.")
 		-- remove all members
 		for _,players in ipairs(minetest.get_connected_players()) do
 			local names = players:get_player_name()

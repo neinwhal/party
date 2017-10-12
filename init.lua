@@ -143,8 +143,11 @@ end
 
 party.leave = function(name)
 	local player = minetest.get_player_by_name(name)
+	local csquad = mod_storage:get_string(name.."_squad")
 	
-	squad.leave(name)
+	if csquad ~= "" then
+		squad.leave(name)
+	end
 	
 	mod_storage:set_string(name.."_party", nil)
 	mod_storage:set_string(name.."_officer", nil)
@@ -182,8 +185,8 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p").." --- List your current party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list").." --- List online members of your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p list all").." --- List all members of your party.")
+			party.send_notice(name, minetest.colorize("cyan", "/p list <playername>").." --- List party and squad of a player.")
 			party.send_notice(name, minetest.colorize("cyan", "/p partylist").." --- Gives full list of parties created.")
-			party.send_notice(name, minetest.colorize("cyan", "/p list <playername>").." --- List party of player.")
 			party.send_notice(name, minetest.colorize("cyan", "/p create <partyname>").." --- Create a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p join <partyname>").." --- Join a party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p leave").." --- Leave your party.")
@@ -281,15 +284,17 @@ minetest.register_chatcommand("p", {
 			elseif param2 ~= nil then
 				if minetest.player_exists(param2) then
 					local cparty = mod_storage:get_string(param2.."_party")
-					if cparty ~= "" then
+					if cparty ~= "" and cparty ~= "@" and cparty ~= "#" and cparty ~= "+" and cparty ~= "=" then
+						local csquad = mod_storage:get_string(param2.."_squad")
 						local cparty_l = mod_storage:get_string(cparty.."_leader")
-						if cparty_l ~= "" then
+						if param2 ~= cparty and csquad == "" then
 							party.send_notice(name, param2.." is currently in "..cparty.."'s party ["..cparty_l.."].")
-						elseif cparty == ("@" or "#") then
-							party.send_notice(name, param2.." is currently not in any party.")
-						local cparty_l = mod_storage:get_string(param2.."_leader")
-						elseif cparty_l ~= "" then
+						elseif param2 ~= cparty and csquad ~= "" then
+							party.send_notice(name, param2.." is currently in "..cparty.."'s party ["..cparty_l.."] and under the ["..csquad.."] squad.")
+						elseif param2 == cparty and csquad == "" then
 							party.send_notice(name, param2.." is currently the leader of "..param2.."'s party ["..cparty_l.."].")
+						elseif param2 == cparty and csquad ~= "" then
+							party.send_notice(name, param2.." is currently the leader of "..param2.."'s party ["..cparty_l.."] and under the ["..csquad.."] squad.")
 						end
 					else party.send_notice(name, param2.." is currently not in any party.")
 					end
@@ -846,9 +851,24 @@ minetest.register_chatcommand("p", {
 					mod_storage:set_string(param2.."_officer", nil)
 					party.send_notice(name, "Kicked "..param2.."[offline] from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
 				else
-					party.send_notice_all(param2, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by an admin, "..name)
-					party.leave(param2)
-					party.send_notice(name, "Kicked "..param2.." from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
+					-- check if online player is a squad leader
+					if mod_storage:get_string(param2.."_squad_leader") ~= "" then
+						-- disband squad if so
+						for _,players in ipairs(minetest.get_connected_players()) do
+							local names = players:get_player_name()
+							if mod_storage:get_string(names.."_party") ==  mod_storage:get_string(param2.."_party") and mod_storage:get_string(names.."_squad") == mod_storage:get_string(param2.."_squad") then
+							squad.leave(names)
+							end
+						end
+						party.send_notice_all(param2, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by an admin, "..name)
+						party.send_notice(name, "Kicked "..param2.." from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
+						party.leave(param2)
+					-- if not, normal kick
+					else	
+						party.send_notice_all(param2, param2.." was kicked from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."] by an admin, "..name)
+						party.send_notice(name, "Kicked "..param2.." from "..cparty.."'s party ["..mod_storage:get_string(cparty.."_leader").."]")
+						party.leave(param2)
+					end
 				end
 			end
 		
