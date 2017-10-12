@@ -11,6 +11,8 @@ PARTY_PARTY_JOIN_MODE = ""		-- default join mode for parties <<< empty(open)/ ac
 PARTY_SQUAD_NAME_LENGTH = 8 	-- max length for squad name/ tag
 PARTY_SQUAD_JOIN_MODE = ""		-- default join mode for squads <<< empty(open) / private >>>
 
+PARTY_IRC_HIDE = "false"			-- if "true" and irc mod is active, party and squad messages are NOT sent to the irc channel. NOTE if true, comment out these few lines; https://github.com/minetest-mods/irc/blob/master/callback.lua#L22-L35 on the irc mod, else there will be double messages.
+
 -- =======================
 -- ===== PLAYER LIST =====
 -- =======================
@@ -997,6 +999,38 @@ minetest.register_on_chat_message(function(name, message)
 				minetest.chat_send_player(names, minetest.colorize("orange", "[Squad]").." <"..name.."> " ..message)
 				party.chat_spy(name, message)
 			end
+		end
+	end
+	
+	-- irc register -- 
+	if minetest.get_modpath("irc") and PARTY_IRC_HIDE == "true" then
+		if not irc.connected
+			or message:sub(1, 1) == "/"
+			or message:sub(1, 5) == "[off]"
+			or not irc.joined_players[name]
+			or (not minetest.check_player_privs(name, {shout=true})) then
+			return
+		end
+		
+		if cparty == (nil or "") then
+			local nl = message:find("\n", 1, true)
+			if nl then
+				message = message:sub(1, nl - 1)
+			end
+			irc.say(irc.playerMessage(name, core.strip_colors(message)))
+		elseif cparty ~= (nil or "") and string.match(message, "^@(.+)") then
+			local nl = message:find("\n", 1, true)
+			if nl then
+				message = message:sub(1, nl - 1)
+			end
+			local newmessage = string.gsub(message, "^@", "")
+			irc.say(irc.playerMessage(name, core.strip_colors(newmessage)))
+		elseif cparty ~= (nil or "") and cinput == "main" and not string.match(message, "^@(.+)") then
+			local nl = message:find("\n", 1, true)
+			if nl then
+				message = message:sub(1, nl - 1)
+			end
+			irc.say(irc.playerMessage(name, core.strip_colors(message)))
 		end
 	end
 
