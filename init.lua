@@ -1057,3 +1057,13 @@ minetest.register_on_leaveplayer(function(player)
 	player:set_attribute("partypending", nil)
 	player:set_attribute("partyinvite", nil)
 end)
+
+
+-- register some global functions to allow external mods to obtain and set mod storage values
+party.get_value = function(value)
+	return mod_storage:get_string(value)
+end
+
+party.set_value = function(value, newvalue)
+	mod_storage:set_string(value, newvalue)
+end

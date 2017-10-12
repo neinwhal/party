@@ -2,11 +2,6 @@
 =================== DOCUMENTATION ===================
 =====================================================
 This document list how the mod stores information.
-
-Note that mod storage values cannot be obtainable
-outside of this mod, an attribute counterpart will
-eventually be added to the important values so it
-will support external mods.
 ===================================================== PARTY
 === mod_storage:<playername>_party		-- player's leadername -- rather than the actual party name, this value is the leadername because it makes it easier to obtain values below with <leadername>
 === mod_storage:<playername>_officer	-- if officer then true, else empty
@@ -14,7 +9,6 @@ will support external mods.
 === mod_storage:<leadername>_leader		-- <leader>'s party name
 === mod_storage:<leadername>_lock		-- join status of party <empty/active/request/private>
 === mod_storage:<leadername>_home		-- home of party <empty/active/request/private>
-=== mod_storage:<leadername>_colour		-- colour of partytag, might return a nonsensical colour because there are no checks to ensure it is a real colour
 -----------------------------------------------------
 === attribute:partyinvite		-- if invited, value is inviter's name
 === attribute:partypending		-- for request mode parties only, if player sends request to join a party, value is party's leadername 
@@ -28,3 +22,11 @@ will support external mods.
 === mod_storage:<playername>_squad_lock			-- join status of squad <empty/private>
 -----------------------------------------------------
 === attribute:squadinvite		-- if invited, value is inviter's name
+===================================================== OBTAINING MOD STORAGE VALUES
+Mod storage values are local to this mod.
+But global functions are added for you to obtain and set values.
+Refer to the list above for a list of values obtainable.
+
+party.get_value(<valuename>) will return mod_storage:get_string(<valuename>)
+party.set_value(<valuename>, <newvalue>) will do mod_storage:set_string(<valuename>, <newvalue>)
+=====================================================
