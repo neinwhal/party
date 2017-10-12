@@ -167,7 +167,11 @@ squad.join = function(name, tag)
 	squad.update_hud_self(name)
 	
 	squad.send_notice_all(name, name.." has joined the ["..tag.."] squad")
-	player:set_nametag_attributes({text = "["..cparty_l.."-"..tag.."] "..name})
+	local tcolour = mod_storage:get_string(cparty.."_colour")
+	if tcolour == "" then
+		tcolour = "lightgrey"
+	end
+	player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."-"..tag.."]").." "..name})
 	player:set_attribute("partychat", "squad")
 end
 
@@ -221,7 +225,12 @@ squad.leave = function(name, tag)
 	mod_storage:set_string(name.."_squad_leader", nil)
 	mod_storage:set_string(name.."_squad_lock", nil)
 	mod_storage:set_string(name.."_squad_no", nil)
-	player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
+	
+	local tcolour = mod_storage:get_string(cparty.."_colour")
+	if tcolour == "" then
+		tcolour = "lightgrey"
+	end
+	player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
 	
 	local squad_amt = squad.member_amt(name, csquad)
 	
@@ -513,6 +522,7 @@ minetest.register_chatcommand("sq", {
 					squad.send_notice(name, param2.." has been sent an invitation to join ["..csquad.."] squad. Pending response")
 				else squad.send_notice(name, "Player "..param2.." does not exist!")
 				end
+			else squad.send_notice(name, "You are not in a squad!")
 			end
 			
 		else squad.send_notice(name, "ERROR: Command is invalid! For help, use the command '/sq help'.")

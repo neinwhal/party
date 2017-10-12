@@ -14,6 +14,7 @@ will support external mods.
 === mod_storage:<leadername>_leader		-- <leader>'s party name
 === mod_storage:<leadername>_lock		-- join status of party <empty/active/request/private>
 === mod_storage:<leadername>_home		-- home of party <empty/active/request/private>
+=== mod_storage:<leadername>_colour		-- colour of partytag, might return a nonsensical colour because there are no checks to ensure it is a real colour
 -----------------------------------------------------
 === attribute:partyinvite		-- if invited, value is inviter's name
 === attribute:partypending		-- for request mode parties only, if player sends request to join a party, value is party's leadername 

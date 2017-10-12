@@ -136,7 +136,11 @@ party.join = function(name, partyname)
 	mod_storage:set_string(name.."_party", partyname)
 	player:set_attribute("partyinvite", nil)
 	player:set_attribute("partypending", nil)
-	player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
+	local tcolour = mod_storage:get_string(partyname.."_colour")
+	if tcolour == "" then
+		tcolour = "lightgrey"
+	end
+	player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
 	party.send_notice_all(name, name.." has joined "..partyname.."'s party ["..cparty_l.."].")
 	player:set_attribute("partychat", "party")
 end
@@ -155,6 +159,7 @@ party.leave = function(name)
 	mod_storage:set_string(name.."_lock", nil)
 	mod_storage:set_string(name.."_title", nil)
 	mod_storage:set_string(name.."_home", nil)
+	mod_storage:set_string(name.."_colour", nil)
 	player:set_nametag_attributes({text = name})
 	player:set_attribute("partychat", "main")
 end
@@ -206,6 +211,7 @@ minetest.register_chatcommand("p", {
 			party.send_notice(name, minetest.colorize("cyan", "/p rename <new_partyname>").." --- Rename your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p sethome").." --- Set your party home.")
 			party.send_notice(name, minetest.colorize("cyan", "/p sethome remove").." --- Remove your party home.")
+			party.send_notice(name, minetest.colorize("cyan", "/p colour <colour>").." --- Set the colour of your party tag.")
 			party.send_notice(name, minetest.colorize("cyan", "/p officer <playername>").." --- Toogle a player's officer position. Officers can kick & invite.")
 			party.send_notice(name, minetest.colorize("cyan", "/p lock <open/active/request/private>").." --- Toggle joining method for your party.")
 			party.send_notice(name, minetest.colorize("cyan", "/p title <playername> <title>").." --- Adds a title to a player in party chat.")
@@ -217,8 +223,6 @@ minetest.register_chatcommand("p", {
 			
 			-- TODO
 			-- formspecs equivalents
-			-- party.send_notice(name, "/p colour <partycolour> --- Change colour of party tag")
-			-- party.send_notice(name, "/p customrank <player> <rank> --- Custom ranks -- for customizing certain party features later on.")
 			
 			-- party.send_notice(name, "/p ally/enemy/neutral <partyname> --- Toggle diplomacy status with another party. Allied parties will have no friendly fire and there will be ally chat.")
 			-- party.send_notice(name, "/p ally list --- Ally list.")
@@ -343,7 +347,11 @@ minetest.register_chatcommand("p", {
 				mod_storage:set_string(name.."_leader", param2)
 				player:set_attribute("partyinvite", nil)
 				player:set_attribute("partychat", "party")
-				player:set_nametag_attributes({text = "["..param2.."] "..name})
+				local tcolour = mod_storage:get_string(name.."_colour")
+				if tcolour == "" then
+					tcolour = "lightgrey"
+				end
+				player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."]").." "..name})
 				
 				party.send_notice(name, "You created "..name.."'s party ["..param2.."].")
 			else
@@ -489,6 +497,7 @@ minetest.register_chatcommand("p", {
 							mod_storage:set_string(playernames.."_officer", nil)
 							mod_storage:set_string(playernames.."_leader", nil)
 							mod_storage:set_string(playernames.."_lock", nil)
+							mod_storage:set_string(playernames.."_title", nil)
 						end
 					end
 				end
@@ -497,6 +506,9 @@ minetest.register_chatcommand("p", {
 				mod_storage:set_string(name.."_party", nil)
 				mod_storage:set_string(name.."_leader", nil)
 				mod_storage:set_string(name.."_lock", nil)
+				mod_storage:set_string(name.."_colour", nil)
+				mod_storage:set_string(name.."_title", nil)
+				mod_storage:set_string(name.."_home", nil)
 				player:set_nametag_attributes({text = name})
 			end
 		
@@ -517,13 +529,43 @@ minetest.register_chatcommand("p", {
 			party.send_notice_all(name, name.." renamed the party tag to ["..param2.."].")
 			
 			-- update online player nametags
+			local tcolour = mod_storage:get_string(name.."_colour")
+			if tcolour == "" then
+				tcolour = "lightgrey"
+			end
 			for _,players in ipairs(minetest.get_connected_players()) do
 				local names = players:get_player_name()
-				if mod_storage:get_string(names.."_party") == cparty then
-					players:set_nametag_attributes({text = "["..param2.."] "..names})
+				local csquad = mod_storage:get_string(names.."_squad")
+				if mod_storage:get_string(names.."_party") == cparty and csquad == "" then
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."]").." "..name})
+				elseif mod_storage:get_string(names.."_party") == cparty and csquad ~= "" then
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."-"..csquad.."]").." "..name})
 				end
 			end
 		
+		elseif param1 == "colour" and param2 ~= nil then
+			if party.check(name, 3) == true then
+				return
+			end
+			party.send_notice(name, "Party tag colour is set to "..minetest.colorize(param2, param2)..".")
+			mod_storage:set_string(name.."_colour", param2)
+			
+			-- update online player nametags
+			local cparty_l = mod_storage:get_string(cparty.."_leader")
+			local tcolour = mod_storage:get_string(cparty.."_colour")
+			if tcolour == "" then
+				tcolour = "lightgrey"
+			end
+			for _,players in ipairs(minetest.get_connected_players()) do
+				local names = players:get_player_name()
+				local csquad = mod_storage:get_string(names.."_squad")
+				if mod_storage:get_string(names.."_party") == cparty and csquad == "" then
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
+				elseif mod_storage:get_string(names.."_party") == cparty and csquad ~= "" then
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."-"..csquad.."]").." "..name})
+				end
+			end
+			
 		elseif param1 == "lock" then
 			if party.check(name, 3) == true then
 				return
@@ -607,7 +649,7 @@ minetest.register_chatcommand("p", {
 					mod_storage:set_string(param2.."_title",param3)
 					party.send_notice(name, "Player "..param2.."'s title has been set to "..param3)
 				end
-			end
+			end	
 			
 		-- /p kick
 		elseif param1 == "kick"	and param2 ~= nil then
@@ -1000,7 +1042,11 @@ minetest.register_on_joinplayer(function(player)
 			party.leave(name)
 			return
 		else
-			player:set_nametag_attributes({text = "["..cparty_l.."] "..name})
+			local tcolour = mod_storage:get_string(cparty.."_colour")
+			if tcolour == "" then
+				tcolour = "lightgrey"
+			end
+			player:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
 		end
 	end
 end)
