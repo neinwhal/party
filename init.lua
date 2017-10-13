@@ -535,6 +535,7 @@ minetest.register_chatcommand("p", {
 				return
 			end
 			if party.check_tag(name, param2) == true then
+				party.send_notice(name, "Party name selected already exists. Please choose another one.")
 				return
 			end
 			-- if not, apply rename
@@ -550,9 +551,9 @@ minetest.register_chatcommand("p", {
 				local names = players:get_player_name()
 				local csquad = mod_storage:get_string(names.."_squad")
 				if mod_storage:get_string(names.."_party") == cparty and csquad == "" then
-					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."]").." "..name})
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."]").." "..names})
 				elseif mod_storage:get_string(names.."_party") == cparty and csquad ~= "" then
-					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."-"..csquad.."]").." "..name})
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..param2.."-"..csquad.."]").." "..names})
 				end
 			end
 		
@@ -573,9 +574,9 @@ minetest.register_chatcommand("p", {
 				local names = players:get_player_name()
 				local csquad = mod_storage:get_string(names.."_squad")
 				if mod_storage:get_string(names.."_party") == cparty and csquad == "" then
-					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..name})
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."]").." "..names})
 				elseif mod_storage:get_string(names.."_party") == cparty and csquad ~= "" then
-					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."-"..csquad.."]").." "..name})
+					players:set_nametag_attributes({text = minetest.colorize(tcolour, "["..cparty_l.."-"..csquad.."]").." "..names})
 				end
 			end
 			
@@ -662,7 +663,35 @@ minetest.register_chatcommand("p", {
 					mod_storage:set_string(param2.."_title",param3)
 					party.send_notice(name, "Player "..param2.."'s title has been set to "..param3)
 				end
-			end	
+			end
+			
+		elseif param1 == "diplo" then
+			-- check if player is in party
+			-- if so send list of allies
+			-- send list of enemies
+			if param2 ~= nil and param3 ~= nil then
+				-- check if player is leader
+				if party.check(name, 3) == true then
+					return
+				end
+				
+				-- check if party actually exists
+				if party.check_tag(name, param2) ~= true then
+					party.send_notice(name, "Party does not exist! Case sensitive!")
+					return
+				end
+				
+-------------------------------------------------------------------------------------------------
+				if param3 == "ally" then
+					
+				elseif param3 == "war" then
+					
+				elseif param3 == "neutral" then
+					
+				end
+			end
+			
+			
 			
 		-- /p kick
 		elseif param1 == "kick"	and param2 ~= nil then

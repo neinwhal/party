@@ -65,8 +65,8 @@ squad.load_hud_self = function(name)
 			text = "party_heart_background.png",
 			number = 0,
 			size = {x=22, y=22},
-			position = { x = 0.01, y = 0.8 },
-			offset = { x = 0, y = 50 + (i*-50) },
+			position = { x = 0.01, y = 0.87 + (i*-0.07) },
+			offset = { x = 0, y = 0 },
 			direction = 0,
 		})
 		ids_hp[name.."_"..cparty.."_hp_"..csquad.."_"..i] = player:hud_add({
@@ -74,29 +74,29 @@ squad.load_hud_self = function(name)
 			text = "party_heart.png",
 			number = 0,
 			size = {x=22, y=22},
-			position = { x = 0.01, y = 0.8 },
-			offset = { x = 0, y = 50 + (i*-50) },
+			position = { x = 0.01, y = 0.87 + (i*-0.07) },
+			offset = { x = 0, y = 0 },
 			direction = 0,
 		})
 		ids_hptag[name.."_"..cparty.."_hptag_"..csquad.."_"..i] = player:hud_add({
 			hud_elem_type = "text",
-			position = { x = 0.01 , y = 0.8 },
+			position = { x = 0.01 , y = 0.87 + (i*-0.07) },
 			alignment = 0,
 			name = "text",
 			number = 0xFFFFFF,
 			text = "",
 			alignment = {x=1,y=0},
-			offset = { x = 5, y = 46.5 + (i*-37.5) },
+			offset = { x = 5, y = 9 },
 		})
 		ids_tag[name.."_"..cparty.."_tag_"..csquad.."_"..i] = player:hud_add({
 			hud_elem_type = "text",
-			position = { x = 0.01 , y = 0.8 },
+			position = { x = 0.01 , y = 0.87 + (i*-0.07) },
 			alignment = 0,
 			name = "text",
 			number = 0x00FF00,
 			text = "",
 			alignment = {x=1,y=0},
-			offset = { x = 0, y = 29.5 + (i*-37.5) },
+			offset = { x = 0, y = -8 },
 		})
 	end
 	
