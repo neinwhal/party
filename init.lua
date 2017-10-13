@@ -79,9 +79,12 @@ party.chat_spy = function(name, message)
 		local names = players:get_player_name()
 		if minetest.check_player_privs(names, {pspy=true}) then
 			local cparty = mod_storage:get_string(name.."_party")
-			if cparty ~= nil then
+			local csquad = mod_storage:get_string(name.."_squad")
+			if cparty ~= "" then
 				if cparty ~= mod_storage:get_string(names.."_party") then
 					minetest.chat_send_player(names, minetest.colorize("yellow", "[SPY]").." [PARTY:"..mod_storage:get_string(cparty.."_leader").."] <"..name.."> "..message)
+				elseif cparty == mod_storage:get_string(names.."_party") and csquad ~= mod_storage:get_string(names.."_squad") then
+					minetest.chat_send_player(names, minetest.colorize("yellow", "[SPY]").." [PARTY:"..mod_storage:get_string(cparty.."_leader").."] [SQUAD:"..csquad.."] <"..name.."> "..message)
 				end
 			end
 		end
@@ -663,35 +666,7 @@ minetest.register_chatcommand("p", {
 					mod_storage:set_string(param2.."_title",param3)
 					party.send_notice(name, "Player "..param2.."'s title has been set to "..param3)
 				end
-			end
-			
-		elseif param1 == "diplo" then
-			-- check if player is in party
-			-- if so send list of allies
-			-- send list of enemies
-			if param2 ~= nil and param3 ~= nil then
-				-- check if player is leader
-				if party.check(name, 3) == true then
-					return
-				end
-				
-				-- check if party actually exists
-				if party.check_tag(name, param2) ~= true then
-					party.send_notice(name, "Party does not exist! Case sensitive!")
-					return
-				end
-				
--------------------------------------------------------------------------------------------------
-				if param3 == "ally" then
-					
-				elseif param3 == "war" then
-					
-				elseif param3 == "neutral" then
-					
-				end
-			end
-			
-			
+			end			
 			
 		-- /p kick
 		elseif param1 == "kick"	and param2 ~= nil then
@@ -1014,20 +989,23 @@ minetest.register_on_chat_message(function(name, message)
 		if cparty == mod_storage:get_string(names.."_party") and cinput == "party" and not string.match(message, "^@(.+)") then
 			if cparty_title ~= "" then
 				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
-				party.chat_spy(name, message)
 			elseif cparty_title == "" then
 				minetest.chat_send_player(names, minetest.colorize("limegreen", "[Party]").." <"..name.."> " ..message)
-				party.chat_spy(name, message)
 			end
 		-- Squad chat
 		elseif cparty == mod_storage:get_string(names.."_party") and csquad == mod_storage:get_string(names.."_squad") and cinput == "squad" and not string.match(message, "^@(.+)") then
 			if cparty_title ~= "" then
 				minetest.chat_send_player(names, minetest.colorize("orange", "[Squad]").." <"..minetest.colorize("lightgrey", cparty_title).." "..name.."> " ..message)
-				party.chat_spy(name, message)
 			elseif cparty_title == "" then
 				minetest.chat_send_player(names, minetest.colorize("orange", "[Squad]").." <"..name.."> " ..message)
-				party.chat_spy(name, message)
 			end
+		end
+	end
+	
+	-- chat spy
+	if cparty ~= "" and not string.match(message, "^@(.+)") then
+		if cinput == "party" or cinput == "squad" then
+			party.chat_spy(name, message)
 		end
 	end
 	
