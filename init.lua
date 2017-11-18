@@ -752,7 +752,7 @@ minetest.register_chatcommand("p", {
 			else party.send_notice(name, "Player "..param2.." does not exist!")
 			end
 		
-		elseif param1 == "invite" then
+		elseif param1 == "invite" and param2 ~= nil then
 			if cparty ~= "" then
 				if party.check(name, 2) == true then
 					return
